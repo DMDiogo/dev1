@@ -103,9 +103,7 @@ export default function LoginForm() {
     <form onSubmit={handleSubmit} className="space-y-5">
       {registered && (
         <p className="text-sm text-green-400 bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3">
-          {searchParams.get('role') === 'restaurant'
-            ? 'Conta criada. Inicia sessão para registar o seu restaurante.'
-            : 'Conta criada com sucesso. Inicia sessão abaixo.'}
+          Conta criada. Inicie sessão para configurar o seu restaurante.
         </p>
       )}
 

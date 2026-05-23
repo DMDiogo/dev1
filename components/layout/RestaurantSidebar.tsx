@@ -8,6 +8,7 @@ import {
   Package,
   Users,
   Truck,
+  Store,
   ChevronRight,
 } from 'lucide-react'
 import Logo from '@/components/auth/Logo'
@@ -18,6 +19,7 @@ const links = [
   { href: '/restaurant/products', label: 'Produtos', icon: Package },
   { href: '/restaurant/clients', label: 'Clientes', icon: Users },
   { href: '/restaurant/drivers', label: 'Motoristas', icon: Truck },
+  { href: '/restaurant/settings', label: 'Restaurante', icon: Store },
 ]
 
 export default function RestaurantSidebar({

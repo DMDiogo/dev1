@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import Card from '@/components/ui/Card'
 import EditRestaurantForm from '@/components/restaurants/EditRestaurantForm'
+import WorkingHoursEditor from '@/components/restaurants/WorkingHoursEditor'
+import { mergeWithDefaults } from '@/lib/working-hours'
 import { ArrowLeft, MapPin, Phone, Mail } from 'lucide-react'
 
 export default async function RestaurantDetailPage({
@@ -113,6 +115,11 @@ export default async function RestaurantDetailPage({
           website: restaurant.website,
           taxId: restaurant.taxId,
         }}
+      />
+
+      <WorkingHoursEditor
+        restaurantId={restaurant.id}
+        initialHours={mergeWithDefaults(restaurant.workingHours)}
       />
 
       {restaurant.products.length > 0 && (

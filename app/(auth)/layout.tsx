@@ -32,7 +32,7 @@ export default function AuthLayout({
             <ul className="mt-8 space-y-3 text-sm text-gray-500">
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-brand-500" />
-                Acesso por perfil Admin ou Restaurante
+                Pedidos, produtos e horários num só lugar
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-brand-500" />
