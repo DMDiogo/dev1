@@ -27,7 +27,7 @@ export default function RegisterPage() {
         Criar conta
       </h1>
       <p className="text-gray-400 mt-1 mb-8">
-        Registe-se como restaurante ou administrador
+        Crie a conta do seu restaurante
       </p>
       <RegisterForm />
     </div>

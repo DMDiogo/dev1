@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { geocodeAddress } from '@/lib/geocode'
+import { seedDefaultWorkingHours } from '@/lib/working-hours'
 
 export const runtime = 'nodejs'
 
@@ -60,6 +61,8 @@ export async function POST(request: Request) {
         where: { id: session.user.id },
         data: { restaurantId: created.id },
       })
+
+      await seedDefaultWorkingHours(tx, created.id)
 
       return created
     })

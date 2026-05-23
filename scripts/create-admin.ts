@@ -1,4 +1,4 @@
-import 'dotenv/config'  // ← deve ser a PRIMEIRA linha
+import 'dotenv/config'
 import bcrypt from 'bcryptjs'
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
@@ -22,12 +22,17 @@ async function main() {
       email,
       password: hashed,
       name,
-      telephone: '+244900000001',
+      telephone: process.env.ADMIN_TELEPHONE ?? '+244900000001',
       role: 'ADMIN',
     },
   })
 
-  console.log('Admin criado:', user.email)
+  console.log('Administrador criado com sucesso.')
+  console.log('  Email:', user.email)
+  console.log('  Nome:', user.name)
+  console.log('')
+  console.log('Este utilizador não se regista no site — apenas via este comando.')
+  console.log('Opcional no .env: ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_NAME, ADMIN_TELEPHONE')
 }
 
 main()

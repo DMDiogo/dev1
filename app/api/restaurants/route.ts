@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { geocodeAddress } from '@/lib/geocode'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { seedDefaultWorkingHours } from '@/lib/working-hours'
 
 export const runtime = 'nodejs'
 
@@ -37,18 +38,22 @@ export async function POST(request: Request) {
     const trimmedAddress = address.trim()
     const geocoded = await geocodeAddress(trimmedAddress)
 
-    const restaurant = await prisma.restaurant.create({
-      data: {
-        name: name.trim(),
-        address: trimmedAddress,
-        telephone: telephone?.trim() || null,
-        email: email?.trim() || null,
-        taxId: taxId?.trim() || null,
-        website: website?.trim() || null,
-        logo: logo?.trim() || null,
-        latitude: geocoded?.latitude ?? null,
-        longitude: geocoded?.longitude ?? null,
-      },
+    const restaurant = await prisma.$transaction(async (tx) => {
+      const created = await tx.restaurant.create({
+        data: {
+          name: name.trim(),
+          address: trimmedAddress,
+          telephone: telephone?.trim() || null,
+          email: email?.trim() || null,
+          taxId: taxId?.trim() || null,
+          website: website?.trim() || null,
+          logo: logo?.trim() || null,
+          latitude: geocoded?.latitude ?? null,
+          longitude: geocoded?.longitude ?? null,
+        },
+      })
+      await seedDefaultWorkingHours(tx, created.id)
+      return created
     })
 
     return NextResponse.json(

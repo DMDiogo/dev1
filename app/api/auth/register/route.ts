@@ -1,19 +1,11 @@
 import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
-import { Role } from '@prisma/client'
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const {
-      name,
-      email,
-      password,
-      telephone,
-      role,
-      adminCode,
-    } = body
+    const { name, email, password, telephone, role } = body
 
     if (!name?.trim() || !email?.trim() || !password || !telephone?.trim()) {
       return NextResponse.json(
@@ -29,23 +21,11 @@ export async function POST(request: Request) {
       )
     }
 
-    const accountRole = role as Role
-
-    if (accountRole !== 'ADMIN' && accountRole !== 'RESTAURANT') {
+    if (role !== 'RESTAURANT') {
       return NextResponse.json(
-        { error: 'Tipo de conta inválido' },
+        { error: 'Registo disponível apenas para restaurantes' },
         { status: 400 }
       )
-    }
-
-    if (accountRole === 'ADMIN') {
-      const secret = process.env.ADMIN_REGISTRATION_CODE
-      if (!secret || adminCode !== secret) {
-        return NextResponse.json(
-          { error: 'Código de administrador inválido' },
-          { status: 403 }
-        )
-      }
     }
 
     const existing = await prisma.user.findFirst({
@@ -72,7 +52,7 @@ export async function POST(request: Request) {
         email: email.toLowerCase().trim(),
         telephone: telephone.trim(),
         password: hashed,
-        role: accountRole,
+        role: 'RESTAURANT',
         restaurantId: null,
       },
       select: { id: true, email: true, role: true },
