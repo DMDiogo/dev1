@@ -24,3 +24,16 @@ body {
 .font-display {
   letter-spacing: -0.02em;
 }
+
+button:not(:disabled),
+[role='button']:not([aria-disabled='true']),
+a,
+label[for],
+select,
+summary {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}

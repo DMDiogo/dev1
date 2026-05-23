@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Plus_Jakarta_Sans, DM_Sans } from 'next/font/google'
+import SessionProvider from '@/components/providers/SessionProvider'
 import './globals.css'
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -26,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="pt" className={`${plusJakarta.variable} ${dmSans.variable}`}>
       <body className="bg-surface text-white font-body antialiased">
-        {children}
+        <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
   )

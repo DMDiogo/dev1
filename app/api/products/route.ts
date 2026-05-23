@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
 import { TaxPercentage } from '@prisma/client'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -17,8 +19,20 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    }
+
     const body = await request.json()
-    const { name, price, restaurantId, taxPercentage } = body
+    let { name, price, restaurantId, taxPercentage } = body
+
+    if (session.user.role === 'RESTAURANT') {
+      if (!session.user.restaurantId) {
+        return NextResponse.json({ error: 'Sem restaurante' }, { status: 403 })
+      }
+      restaurantId = session.user.restaurantId
+    }
 
     if (!name?.trim() || !restaurantId) {
       return NextResponse.json(

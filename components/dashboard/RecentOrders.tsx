@@ -11,7 +11,15 @@ type RecentOrder = {
   user: { name: string }
 }
 
-export default function RecentOrders({ orders }: { orders: RecentOrder[] }) {
+export default function RecentOrders({
+  orders,
+  orderLinkPrefix = '/orders',
+  ordersListHref = '/orders',
+}: {
+  orders: RecentOrder[]
+  orderLinkPrefix?: string
+  ordersListHref?: string
+}) {
   if (orders.length === 0) {
     return (
       <div className="bg-surface-card border border-surface-border rounded-2xl p-5">
@@ -30,7 +38,7 @@ export default function RecentOrders({ orders }: { orders: RecentOrder[] }) {
           Pedidos Recentes
         </h3>
         <Link
-          href="/orders"
+          href={ordersListHref}
           className="text-xs text-brand-500 hover:text-brand-400 font-medium"
         >
           Ver todos →
@@ -40,8 +48,8 @@ export default function RecentOrders({ orders }: { orders: RecentOrder[] }) {
         {orders.map((order) => (
           <li key={order.id}>
             <Link
-              href={`/orders/${order.id}`}
-              className="flex items-center justify-between p-3 rounded-xl hover:bg-surface-muted/30 transition-colors"
+              href={`${orderLinkPrefix}/${order.id}`}
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-xl hover:bg-surface-muted/30 transition-colors"
             >
               <div>
                 <p className="text-sm font-medium text-white">

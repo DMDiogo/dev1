@@ -74,6 +74,14 @@ export default async function RestaurantDetailPage({
                 <dd className="text-brand-500">{restaurant.website}</dd>
               </div>
             )}
+            {restaurant.latitude != null && restaurant.longitude != null && (
+              <div>
+                <dt className="text-gray-500 text-xs">Coordenadas GPS</dt>
+                <dd className="text-gray-300 font-mono text-xs">
+                  {restaurant.latitude.toFixed(5)}, {restaurant.longitude.toFixed(5)}
+                </dd>
+              </div>
+            )}
           </dl>
         </Card>
 

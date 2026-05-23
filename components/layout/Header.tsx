@@ -1,32 +1,36 @@
 'use client'
 
-import { Bell } from 'lucide-react'
+import { Menu } from 'lucide-react'
 import HeaderSearch from '@/components/layout/HeaderSearch'
+import UserMenu from '@/components/layout/UserMenu'
 
-export default function Header() {
+type HeaderProps = {
+  showSearch?: boolean
+  onMenuClick?: () => void
+}
+
+export default function Header({
+  showSearch = true,
+  onMenuClick,
+}: HeaderProps) {
   return (
-    <header className="h-16 border-b border-surface-border bg-surface-card flex items-center justify-between px-6 shrink-0 gap-4">
-      <HeaderSearch />
-
-      <div className="flex items-center gap-4">
+    <header className="h-14 sm:h-16 border-b border-surface-border bg-surface-card flex items-center justify-between px-4 sm:px-6 shrink-0 gap-3">
+      <div className="flex items-center gap-3 flex-1 min-w-0">
         <button
           type="button"
-          className="relative p-2 rounded-xl text-gray-400 hover:text-white hover:bg-surface-muted/50 transition-colors"
-          aria-label="Notificações"
+          onClick={onMenuClick}
+          className="lg:hidden p-2 -ml-1 rounded-xl text-gray-400 hover:text-white hover:bg-surface-muted/50"
+          aria-label="Abrir menu"
         >
-          <Bell size={18} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-brand-500 rounded-full" />
+          <Menu size={20} />
         </button>
-        <div className="flex items-center gap-3 pl-4 border-l border-surface-border">
-          <div className="w-8 h-8 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-500 text-sm font-bold">
-            A
-          </div>
-          <div className="hidden sm:block">
-            <p className="text-sm font-medium text-white">Admin</p>
-            <p className="text-xs text-gray-500">Administrador</p>
-          </div>
-        </div>
+        {showSearch ? (
+          <HeaderSearch />
+        ) : (
+          <div className="flex-1 lg:hidden" />
+        )}
       </div>
+      <UserMenu />
     </header>
   )
 }

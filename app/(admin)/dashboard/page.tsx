@@ -1,51 +1,49 @@
-import { prisma } from '@/lib/prisma'
+import { getSession } from '@/lib/session'
+import { getDashboardMetrics } from '@/lib/dashboard-stats'
 import StatsCard from '@/components/dashboard/StatsCard'
 import RevenueChart from '@/components/dashboard/RevenueChart'
 import RecentOrders from '@/components/dashboard/RecentOrders'
 import { ShoppingBag, Users, UtensilsCrossed, TrendingUp } from 'lucide-react'
 
 export default async function DashboardPage() {
-  const [totalOrders, totalUsers, totalRestaurants, revenue, recentOrders] =
-    await Promise.all([
-      prisma.order.count(),
-      prisma.user.count({ where: { role: 'CLIENT' } }),
-      prisma.restaurant.count(),
-      prisma.order.aggregate({ _sum: { total: true } }),
-      prisma.order.findMany({
-        take: 5,
-        orderBy: { createdAt: 'desc' },
-        include: { user: { select: { name: true } } },
-      }),
-    ])
+  const [session, metrics] = await Promise.all([
+    getSession(),
+    getDashboardMetrics(),
+  ])
+
+  const firstName = session?.user?.name?.split(' ')[0] ?? 'Admin'
 
   const stats = [
     {
       label: 'Total de Pedidos',
-      value: totalOrders,
+      value: metrics.totalOrders,
       icon: ShoppingBag,
       color: 'orange' as const,
-      change: '+12% este mês',
+      change: metrics.orderChange,
     },
     {
       label: 'Clientes',
-      value: totalUsers,
+      value: metrics.totalUsers,
       icon: Users,
       color: 'blue' as const,
-      change: '+5 hoje',
+      change:
+        metrics.usersToday > 0
+          ? `+${metrics.usersToday} hoje`
+          : 'sem novos hoje',
     },
     {
       label: 'Restaurantes',
-      value: totalRestaurants,
+      value: metrics.totalRestaurants,
       icon: UtensilsCrossed,
       color: 'green' as const,
-      change: 'activos',
+      change: 'na plataforma',
     },
     {
       label: 'Receita Total',
-      value: `${(revenue._sum.total ?? 0).toLocaleString('pt-AO')} Kz`,
+      value: `${metrics.revenueTotal.toLocaleString('pt-AO')} Kz`,
       icon: TrendingUp,
       color: 'purple' as const,
-      change: '+8% este mês',
+      change: metrics.revenueChange,
     },
   ]
 
@@ -53,9 +51,8 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="font-display text-3xl font-bold text-white">
-          Dashboard
+          Olá, {firstName}
         </h1>
-        <p className="text-gray-400 mt-1">Visão geral do sistema</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -65,8 +62,8 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <RevenueChart />
-        <RecentOrders orders={recentOrders} />
+        <RevenueChart data={metrics.monthlyRevenue} />
+        <RecentOrders orders={metrics.recentOrders} />
       </div>
     </div>
   )

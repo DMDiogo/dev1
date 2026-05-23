@@ -1,30 +1,57 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
 import Label from '@/components/ui/Label'
 
+const emptyForm = {
+  name: '',
+  address: '',
+  telephone: '',
+  email: '',
+  taxId: '',
+}
+
 export default function NewRestaurantButton() {
   const router = useRouter()
+  const formRef = useRef<HTMLFormElement>(null)
   const [open, setOpen] = useState(false)
+  const [formKey, setFormKey] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+
+  function handleOpenChange(nextOpen: boolean) {
+    setOpen(nextOpen)
+    if (!nextOpen) {
+      setError(null)
+      setSuccess(null)
+      setLoading(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
+    setSuccess(null)
     setLoading(true)
 
-    const form = new FormData(e.currentTarget)
+    const form = formRef.current
+    if (!form) {
+      setLoading(false)
+      return
+    }
+
+    const formData = new FormData(form)
     const payload = {
-      name: String(form.get('name')).trim(),
-      address: String(form.get('address')).trim(),
-      telephone: String(form.get('telephone') || '').trim() || undefined,
-      email: String(form.get('email') || '').trim() || undefined,
-      taxId: String(form.get('taxId') || '').trim() || undefined,
+      name: String(formData.get('name')).trim(),
+      address: String(formData.get('address')).trim(),
+      telephone: String(formData.get('telephone') || '').trim() || undefined,
+      email: String(formData.get('email') || '').trim() || undefined,
+      taxId: String(formData.get('taxId') || '').trim() || undefined,
     }
 
     try {
@@ -34,17 +61,28 @@ export default function NewRestaurantButton() {
         body: JSON.stringify(payload),
       })
 
+      const data = await res.json()
+
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
         throw new Error(data.error ?? 'Erro ao criar restaurante')
       }
 
-      setOpen(false)
-      e.currentTarget.reset()
+      setSuccess(
+        data.geocodeMessage ??
+          (data.geocoded
+            ? 'Restaurante criado com coordenadas GPS.'
+            : 'Restaurante criado.')
+      )
+      setLoading(false)
       router.refresh()
+
+      setTimeout(() => {
+        setFormKey((k) => k + 1)
+        setOpen(false)
+        setSuccess(null)
+      }, 2800)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao criar restaurante')
-    } finally {
       setLoading(false)
     }
   }
@@ -57,45 +95,90 @@ export default function NewRestaurantButton() {
 
       <Modal
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={handleOpenChange}
         title="Novo Restaurante"
-        description="Preenche os dados para registar um restaurante."
+        description="A morada será usada para obter latitude e longitude automaticamente."
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          key={formKey}
+          ref={formRef}
+          onSubmit={handleSubmit}
+          className="space-y-4"
+        >
           <div>
             <Label htmlFor="name">Nome *</Label>
-            <Input id="name" name="name" required placeholder="Ex: Restaurante Luanda" />
+            <Input
+              id="name"
+              name="name"
+              required
+              defaultValue={emptyForm.name}
+              placeholder="Ex: Restaurante Luanda"
+            />
           </div>
           <div>
             <Label htmlFor="address">Morada *</Label>
-            <Input id="address" name="address" required placeholder="Rua, bairro, cidade" />
+            <Input
+              id="address"
+              name="address"
+              required
+              defaultValue={emptyForm.address}
+              placeholder="Ex: Talatona, Luanda, Angola"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Inclui bairro e cidade (ex: Talatona, Luanda, Angola).
+            </p>
           </div>
           <div>
             <Label htmlFor="telephone">Telefone</Label>
-            <Input id="telephone" name="telephone" placeholder="+244 9XX XXX XXX" />
+            <Input
+              id="telephone"
+              name="telephone"
+              defaultValue={emptyForm.telephone}
+              placeholder="+244 9XX XXX XXX"
+            />
           </div>
           <div>
             <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" type="email" placeholder="contacto@restaurante.ao" />
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              defaultValue={emptyForm.email}
+              placeholder="contacto@restaurante.ao"
+            />
           </div>
           <div>
             <Label htmlFor="taxId">NIF</Label>
-            <Input id="taxId" name="taxId" placeholder="Número de contribuinte" />
+            <Input
+              id="taxId"
+              name="taxId"
+              defaultValue={emptyForm.taxId}
+              placeholder="Número de contribuinte"
+            />
           </div>
 
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && (
+            <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+              {error}
+            </p>
+          )}
+          {success && (
+            <p className="text-sm text-green-400 bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3">
+              {success}
+            </p>
+          )}
 
           <div className="flex justify-end gap-2 pt-2">
             <Button
               type="button"
               variant="ghost"
-              onClick={() => setOpen(false)}
+              onClick={() => handleOpenChange(false)}
               disabled={loading}
             >
               Cancelar
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'A guardar...' : 'Criar Restaurante'}
+              {loading ? 'A obter localização...' : 'Criar Restaurante'}
             </Button>
           </div>
         </form>

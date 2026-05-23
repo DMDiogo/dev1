@@ -11,6 +11,7 @@ import {
   Truck,
   ChevronRight,
 } from 'lucide-react'
+import Logo from '@/components/auth/Logo'
 
 const links = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -21,28 +22,27 @@ const links = [
   { href: '/drivers', label: 'Motoristas', icon: Truck },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname()
 
   return (
-    <aside className="w-64 bg-surface-card border-r border-surface-border flex flex-col shrink-0">
-      <div className="p-6 border-b border-surface-border">
-        <h1 className="font-display text-xl font-bold text-brand-500 tracking-tight">
-          🍽️ FoodAdmin
-        </h1>
-        <p className="text-xs text-gray-500 mt-1">Painel de Gestão</p>
+    <aside className="w-64 h-full bg-surface-card border-r border-surface-border flex flex-col">
+      <div className="p-5 sm:p-6 border-b border-surface-border">
+        <Logo size={36} href="/dashboard" />
+        <p className="text-xs text-gray-500 mt-2">Painel Administrador</p>
       </div>
 
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 p-3 sm:p-4 space-y-1 overflow-y-auto">
         {links.map(({ href, label, icon: Icon }) => {
           const active = pathname.startsWith(href)
           return (
             <Link
               key={href}
               href={href}
+              onClick={onNavigate}
               className={`
                 flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
-                transition-all duration-200 group
+                transition-all duration-200
                 ${
                   active
                     ? 'bg-brand-500/10 text-brand-500 border border-brand-500/20'
@@ -50,16 +50,16 @@ export default function Sidebar() {
                 }
               `}
             >
-              <Icon size={18} />
+              <Icon size={18} className="shrink-0" />
               <span className="flex-1">{label}</span>
-              {active && <ChevronRight size={14} />}
+              {active && <ChevronRight size={14} className="shrink-0" />}
             </Link>
           )
         })}
       </nav>
 
       <div className="p-4 border-t border-surface-border">
-        <p className="text-xs text-gray-600 text-center">v1.0.0 · Angola 🇦🇴</p>
+        <p className="text-xs text-gray-600 text-center">v1.0.0 · Angola</p>
       </div>
     </aside>
   )

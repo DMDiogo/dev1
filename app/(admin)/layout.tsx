@@ -1,20 +1,12 @@
-import Sidebar from '@/components/layout/Sidebar'
-import Header from '@/components/layout/Header'
+import AppShell from '@/components/layout/AppShell'
+import { requireAdmin } from '@/lib/session'
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  return (
-    <div className="flex h-screen bg-surface overflow-hidden">
-      <Sidebar />
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <Header />
-        <main className="flex-1 overflow-y-auto p-6 bg-[#0a0a0a]">
-          {children}
-        </main>
-      </div>
-    </div>
-  )
+  await requireAdmin()
+
+  return <AppShell variant="admin">{children}</AppShell>
 }

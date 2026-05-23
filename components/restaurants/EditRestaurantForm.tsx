@@ -25,12 +25,12 @@ export default function EditRestaurantForm({
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
+  const [success, setSuccess] = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
-    setSuccess(false)
+    setSuccess(null)
     setLoading(true)
 
     const form = new FormData(e.currentTarget)
@@ -50,12 +50,15 @@ export default function EditRestaurantForm({
         body: JSON.stringify(payload),
       })
 
+      const data = await res.json()
+
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
         throw new Error(data.error ?? 'Erro ao guardar alterações')
       }
 
-      setSuccess(true)
+      setSuccess(
+        data.geocodeMessage ?? 'Alterações guardadas com sucesso.'
+      )
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao guardar')
@@ -123,11 +126,13 @@ export default function EditRestaurantForm({
 
         {error && <p className="text-sm text-red-400">{error}</p>}
         {success && (
-          <p className="text-sm text-green-400">Alterações guardadas com sucesso.</p>
+          <p className="text-sm text-green-400 bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3">
+            {success}
+          </p>
         )}
 
         <Button type="submit" disabled={loading}>
-          {loading ? 'A guardar...' : 'Guardar alterações'}
+          {loading ? 'A atualizar localização...' : 'Guardar alterações'}
         </Button>
       </form>
     </Card>

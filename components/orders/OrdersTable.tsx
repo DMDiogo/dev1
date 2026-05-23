@@ -21,7 +21,15 @@ type OrderRow = {
   items: { restaurant: { name: string } }[]
 }
 
-export default function OrdersTable({ orders }: { orders: OrderRow[] }) {
+export default function OrdersTable({
+  orders,
+  orderLinkPrefix = '/orders',
+  hideRestaurantColumn = false,
+}: {
+  orders: OrderRow[]
+  orderLinkPrefix?: string
+  hideRestaurantColumn?: boolean
+}) {
   if (orders.length === 0) {
     return (
       <p className="text-gray-500 text-sm py-8 text-center">
@@ -36,7 +44,7 @@ export default function OrdersTable({ orders }: { orders: OrderRow[] }) {
         <TableRow>
           <TableHeader>#</TableHeader>
           <TableHeader>Cliente</TableHeader>
-          <TableHeader>Restaurante</TableHeader>
+          {!hideRestaurantColumn && <TableHeader>Restaurante</TableHeader>}
           <TableHeader>Motorista</TableHeader>
           <TableHeader>Total</TableHeader>
           <TableHeader>Estado</TableHeader>
@@ -54,7 +62,9 @@ export default function OrdersTable({ orders }: { orders: OrderRow[] }) {
                 {order.orderCounter}
               </TableCell>
               <TableCell>{order.user?.name ?? '—'}</TableCell>
-              <TableCell className="text-gray-400">{restaurantName}</TableCell>
+              {!hideRestaurantColumn && (
+                <TableCell className="text-gray-400">{restaurantName}</TableCell>
+              )}
               <TableCell className="text-gray-400">
                 {order.driver?.name ?? '—'}
               </TableCell>
@@ -69,7 +79,7 @@ export default function OrdersTable({ orders }: { orders: OrderRow[] }) {
               </TableCell>
               <TableCell>
                 <Link
-                  href={`/orders/${order.id}`}
+                  href={`${orderLinkPrefix}/${order.id}`}
                   className="text-brand-500 hover:text-brand-400 text-xs font-medium"
                 >
                   Ver →

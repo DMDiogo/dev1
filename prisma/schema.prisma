@@ -7,70 +7,73 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
-  address   String?
-  telephone String   @unique
-  taxId     String?  @unique
-  role      Role
-  latitude  Float?
-  longitude Float?
-  createdAt DateTime @default(now())
+  id           String      @id @default(uuid())
+  name         String
+  email        String      @unique
+  password     String
+  address      String?
+  telephone    String      @unique
+  taxId        String?     @unique
+  role         Role
+  restaurantId String?
+  restaurant   Restaurant? @relation(fields: [restaurantId], references: [id])
+  latitude     Float?
+  longitude    Float?
+  createdAt    DateTime    @default(now())
+  driverOrders Order[]     @relation("DriverOrders")
   orders       Order[]
-  driverOrders Order[] @relation("DriverOrders")
 }
 
 model Restaurant {
-  id           String   @id @default(uuid())
-  name         String
-  address      String
-  taxId        String?
-  telephone    String?
-  email        String?
-  orderEmail   String?
-  website      String?
-  logo         String?
-  latitude     Float?
-  longitude    Float?
-  createdAt    DateTime @default(now())
-  regimeIva    String?
-  products         Product[]
-  orderItems       OrderItem[]
-  paymentMethods   RestaurantPaymentMethod[]
-  workingHours     RestaurantWorkingHour[]
+  id             String                    @id @default(uuid())
+  name           String
+  address        String
+  taxId          String?
+  telephone      String?
+  email          String?
+  orderEmail     String?
+  website        String?
+  logo           String?
+  latitude       Float?
+  longitude      Float?
+  createdAt      DateTime                  @default(now())
+  regimeIva      String?
+  orderItems     OrderItem[]
+  products       Product[]
+  paymentMethods RestaurantPaymentMethod[]
+  workingHours   RestaurantWorkingHour[]
+  staff          User[]
 }
 
 model RestaurantPaymentMethod {
-  id           String      @id @default(uuid())
+  id           String        @id @default(uuid())
   restaurantId String
-  restaurant   Restaurant  @relation(fields: [restaurantId], references: [id])
   method       PaymentMethod
+  restaurant   Restaurant    @relation(fields: [restaurantId], references: [id])
 }
 
 model RestaurantWorkingHour {
   id           String     @id @default(uuid())
   restaurantId String
-  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
   dayOfWeek    WeekDay    @default(MONDAY)
   startTime    String
   endTime      String
   isOpen       Boolean    @default(true)
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
 }
 
 model Product {
-  id           String        @id @default(uuid())
-  name         String
-  price        Float
+  id            String        @id @default(uuid())
+  name          String
+  price         Float
   taxPercentage TaxPercentage @default(VAT_14)
-  image1       String?
-  image2       String?
-  image3       String?
-  image4       String?
-  restaurantId String
-  restaurant   Restaurant    @relation(fields: [restaurantId], references: [id])
-  orderItems   OrderItem[]
+  image1        String?
+  image2        String?
+  image3        String?
+  image4        String?
+  restaurantId  String
+  orderItems    OrderItem[]
+  restaurant    Restaurant    @relation(fields: [restaurantId], references: [id])
 }
 
 model Order {
@@ -82,14 +85,14 @@ model Order {
   deliveryTax        Float       @default(0)
   deliveryFee        Float       @default(0)
   userId             String
-  user               User        @relation(fields: [userId], references: [id])
   status             OrderStatus @default(PENDING)
   createdAt          DateTime    @default(now())
   driverId           String?
-  driver             User?       @relation("DriverOrders", fields: [driverId], references: [id])
   driverLatitude     Float?
   driverLongitude    Float?
   lastLocationUpdate DateTime?
+  driver             User?       @relation("DriverOrders", fields: [driverId], references: [id])
+  user               User        @relation(fields: [userId], references: [id])
   items              OrderItem[]
 }
 
@@ -99,10 +102,10 @@ model OrderItem {
   price         Float
   taxPercentage TaxPercentage @default(VAT_14)
   orderId       String
-  order         Order         @relation(fields: [orderId], references: [id])
   productId     String
-  product       Product       @relation(fields: [productId], references: [id])
   restaurantId  String
+  order         Order         @relation(fields: [orderId], references: [id])
+  product       Product       @relation(fields: [productId], references: [id])
   restaurant    Restaurant    @relation(fields: [restaurantId], references: [id])
 }
 
