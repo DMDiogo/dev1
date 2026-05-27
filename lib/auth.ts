@@ -78,23 +78,22 @@ export const authOptions: NextAuthOptions = {
       }
     },
     callbackUrl: {
-      name: `next-auth.callback-url`,
+      name: `next-auth.callback_url`,
       options: {
-        httpOnly: true,
         sameSite: 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined,
+        //domain: process.env.COOKIE_DOMAIN || undefined,
       }
     },
     csrfToken: {
-      name: `next-auth.csrf-token`, // Remove __Host- prefix
+      name: `next-auth.csrf-tokem`,
       options: {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined,
+        secure: true,
+        //domain: process.env.COOKIE_DOMAIN || undefined,
       }
     },
   },
