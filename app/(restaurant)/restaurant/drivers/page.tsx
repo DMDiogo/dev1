@@ -26,15 +26,19 @@ export default async function RestaurantDriversPage() {
   const session = await requireRestaurant()
   const restaurantId = session.user.restaurantId!
 
-  const [drivers, stats] = await Promise.all([
-    getRestaurantDrivers(restaurantId),
-    getRestaurantDrivers(restaurantId),
-  ])
+  const drivers = await getRestaurantDrivers(restaurantId)
 
-  const activeForRestaurant = stats.activeDeliveries ?? 0
-  const completedForRestaurant = stats.completedDeliveries ?? 0
-  const busyDrivers = drivers.filter((d) =>
-    ACTIVE_STATUSES.includes(d.driverOrders?.some(o => ACTIVE_STATUSES.includes(o.status)) ? 'ACCEPTED_DRIVER' : null) as OrderStatus
+  // Calculate stats from the drivers data
+  const completedForRestaurant = drivers.reduce((acc, driver) => 
+    acc + (driver.driverOrders?.filter((o: any) => o.status === 'DELIVERED').length ?? 0), 0
+  )
+  
+  const activeForRestaurant = drivers.reduce((acc, driver) => 
+    acc + (driver.driverOrders?.filter((o: any) => ACTIVE_STATUSES.includes(o.status as OrderStatus)).length ?? 0), 0
+  )
+  
+  const busyDrivers = drivers.filter((driver) => 
+    driver.driverOrders?.some((o: any) => ACTIVE_STATUSES.includes(o.status as OrderStatus)) ?? false
   ).length
 
   return (
@@ -89,7 +93,9 @@ export default async function RestaurantDriversPage() {
           </TableHead>
           <TableBody>
             {drivers.map((driver) => {
-              const isBusy = driver.driverOrders?.some(o => ACTIVE_STATUSES.includes(o.status)) ?? false
+              const isBusy = driver.driverOrders?.some((o: any) => 
+                ACTIVE_STATUSES.includes(o.status as OrderStatus)
+              ) ?? false
               return (
                 <TableRow key={driver.id}>
                   <TableCell className="font-medium text-white">
