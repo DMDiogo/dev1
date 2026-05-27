@@ -173,14 +173,20 @@ export async function adminFetcher<T>(
   }
 
   const baseUrl = process.env.BACKEND_API_URL || 'http://localhost:3001'
+
+  // Don't add /api prefix if it's already in the endpoint
+  const url = `${baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`
   
-  const response = await fetch(`${baseUrl}${endpoint}`, {
+  console.log('[adminFetcher] Requesting:', url)  
+  
+  const response = await fetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${session.user.accessToken}`,
       ...options?.headers,
     },
+    credentials: 'include',
   })
 
   // Handle 401 Unauthorized - token might be expired
