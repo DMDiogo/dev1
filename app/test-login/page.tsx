@@ -34,13 +34,13 @@ export default function TestLoginPage() {
             const sessionRes = await fetch('/api/auth/session')
             const session = await sessionRes.json()
             console.log('Session after login:', session)
-            setResult(prev => ({ ...prev, session }))
+            setResult((prev: any) => ({ ...prev, session }))
             
             // Also check debug session
             const debugRes = await fetch('/api/debug-session')
             const debug = await debugRes.json()
             console.log('Debug session:', debug)
-            setResult(prev => ({ ...prev, debug }))
+            setResult((prev: any) => ({ ...prev, debug }))
           } catch (error) {
             console.error('Error fetching session:', error)
           }
