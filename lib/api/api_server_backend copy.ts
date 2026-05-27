@@ -154,120 +154,9 @@ async function getServerToken(): Promise<string | null> {
 }
 
 // Convenience exports
-// @/lib/api/api_server_backend.ts
 
+// In @/lib/api/api_server_backend.ts
 export async function adminFetcher<T>(
-  endpoint: string,
-  options?: RequestInit
-): Promise<T> {
-  // Get session to retrieve JWT token
-  const session = await getServerSession(authOptions)
-  
-  console.log('[adminFetcher] Session ID:', session?.user?.id)
-  console.log('[adminFetcher] Session role:', session?.user?.role)
-  console.log('[adminFetcher] Has accessToken:', !!session?.user?.accessToken)
-  
-  if (!session?.user?.accessToken) {
-    console.error('[adminFetcher] No access token found - redirecting to login')
-    throw new Error('Authentication required. Please log in.')
-  }
-
-  const baseUrl = process.env.BACKEND_API_URL || 'http://localhost:3001'
-  
-  const response = await fetch(`${baseUrl}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.user.accessToken}`,
-      ...options?.headers,
-    },
-  })
-
-  // Handle 401 Unauthorized - token might be expired
-  if (response.status === 401) {
-    console.error('[adminFetcher] Token expired or invalid')
-    throw new Error('Session expired. Please log in again.')
-  }
-
-  if (!response.ok) {
-    const error = await response.text()
-    console.error('[adminFetcher] Error response:', response.status, error)
-    throw new Error(`API error: ${response.status}`)
-  }
-
-  return response.json()
-}
-
-// In @/lib/api/api_server_backend.ts
-
-// Public fetcher - NO authentication required
-export async function publicFetcher<T>(
-  endpoint: string,
-  options?: RequestInit
-): Promise<T> {
-  const baseUrl = process.env.BACKEND_API_URL || 'http://localhost:3001'
-  
-  console.log('[publicFetcher] Making request to:', `${baseUrl}${endpoint}`)
-  
-  const response = await fetch(`${baseUrl}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  })
-
-  if (!response.ok) {
-    const error = await response.text()
-    console.error('[publicFetcher] Error response:', response.status, error)
-    throw new Error(`API error: ${response.status}`)
-  }
-
-  return response.json()
-}
-
-// Admin fetcher - REQUIRES authentication
-export async function adminFetcher_v1<T>(
-  endpoint: string,
-  options?: RequestInit
-): Promise<T> {
-  // Get session to retrieve JWT token
-  const session = await getServerSession(authOptions)
-  
-  console.log('[adminFetcher] Debug - Session exists:', !!session)
-  console.log('[adminFetcher] Debug - User exists:', !!session?.user)
-  console.log('[adminFetcher] Debug - Access token exists:', !!session?.user?.accessToken)
-
-  if (!session?.user?.accessToken) {
-    console.error('[adminFetcher] No access token found - user not authenticated')
-    throw new Error('Authentication required. Please log in.')
-  }
-
-  const baseUrl = process.env.BACKEND_API_URL || 'http://localhost:3001'
-  
-  console.log('[adminFetcher] Making request to:', `${baseUrl}${endpoint}`)
-  
-  const response = await fetch(`${baseUrl}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.user.accessToken}`,
-      ...options?.headers,
-    },
-  })
-
-  if (!response.ok) {
-    const error = await response.text()
-    console.error('[adminFetcher] Error response:', response.status, error)
-    throw new Error(`API error: ${response.status}`)
-  }
-
-  return response.json()
-}
-
-
-// In @/lib/api/api_server_backend.ts
-export async function adminFetcher_<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> {
@@ -313,7 +202,7 @@ export async function adminFetcher_<T>(
   return response.json()
 }
 
-export const publicFetcher_ = <T>(endpoint: string, options?: RequestInit) => 
+export const publicFetcher = <T>(endpoint: string, options?: RequestInit) => 
   fetcher<T>(endpoint, options, false);
 
 // Dashboard functions

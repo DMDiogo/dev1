@@ -5,6 +5,9 @@ import { validateUserCredentials } from '@/lib/validate-user'
 import jwt from 'jsonwebtoken'
 import type { Role } from '@/types/next-auth'
 
+// In lib/auth.ts - authorize function
+import { publicFetcher } from '@/lib/api/api_server_backend'
+
 // lib/auth.ts - Update the generateAccessToken function
 
 function generateAccessToken(user: any) {
@@ -58,7 +61,11 @@ function generateAccessToken_(user: any) {
 
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
-  session: { strategy: 'jwt', maxAge: 30 * 24 * 60 * 60 },
+  session: { 
+    strategy: 'jwt', 
+    maxAge: 30 * 24 * 60 * 60,
+    updateAge: 24 * 60 * 60,
+  },
   cookies: {
     sessionToken: {
       name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.session-token`,
@@ -69,7 +76,26 @@ export const authOptions: NextAuthOptions = {
         secure: process.env.NODE_ENV === 'production',
         domain: process.env.COOKIE_DOMAIN || undefined,
       }
-    }
+    },
+    callbackUrl: {
+      name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.callback-url`,
+      options: {
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        domain: process.env.COOKIE_DOMAIN || undefined,
+      }
+    },
+    csrfToken: {
+      name: `${process.env.NODE_ENV === 'production' ? '__Host-' : ''}next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        domain: process.env.COOKIE_DOMAIN || undefined,
+      }
+    },
   },
   pages: {
     signIn: '/login',
@@ -82,6 +108,7 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
+      
       async authorize(credentials) {
         try {
           if (!credentials?.email || !credentials?.password) {
