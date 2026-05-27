@@ -1,6 +1,16 @@
 import 'dotenv/config'
 import { publicFetcher } from '@/lib/api/api_server_backend'
 
+// Define the expected user response type
+interface AdminUserResponse {
+  id: string
+  email: string
+  name: string
+  role: string
+  telephone?: string
+  createdAt?: string
+}
+
 async function main() {
   const email = (process.env.ADMIN_EMAIL ?? 'admin@foodadmin.ao').toLowerCase().trim()
   const password = process.env.ADMIN_PASSWORD ?? 'admin123'
@@ -20,7 +30,8 @@ async function main() {
   try {
     console.log('Creating admin user:', { email, name, role: 'ADMIN' })
     
-    const user = await publicFetcher('/api/auth/register', {
+    // Type the response from publicFetcher
+    const user = await publicFetcher<AdminUserResponse>('/api/auth/register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
