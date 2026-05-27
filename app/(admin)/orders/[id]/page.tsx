@@ -105,7 +105,7 @@ export default async function OrderDetailPage({
 
       <Card title="Itens do pedido">
         <ul className="divide-y divide-surface-border">
-          {order.items?.map((item) => (
+          {order.items?.map((item: any) => (
             <li
               key={item.id}
               className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
