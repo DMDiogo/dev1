@@ -154,6 +154,19 @@ async function getServerToken(): Promise<string | null> {
   }
 }
 
+// Helper to safely get expiration from token
+function getTokenExpiration(token: string): Date | null {
+  try {
+    const decoded = jwt.decode(token) as JwtPayload | string | null
+    if (decoded && typeof decoded === 'object' && decoded.exp) {
+      return new Date(decoded.exp * 1000)
+    }
+    return null
+  } catch (error) {
+    console.error('[Token] Failed to decode:', error)
+    return null
+  }
+}
 
 // Convenience exports
 // @/lib/api/api_server_backend.ts
@@ -177,7 +190,13 @@ export async function adminFetcher<T>(
   // Decode the token to see what's inside
   const decodedToken = jwt.decode(session.user.accessToken)
   console.log('[adminFetcher] Decoded token:', decodedToken)
-  console.log('[adminFetcher] Token expiration:', decodedToken?.exp ? new Date(decodedToken.exp * 1000).toISOString() : 'unknown')
+  const expiration = getTokenExpiration(session.user.accessToken)
+  if (expiration) {
+    console.log('[adminFetcher] Token expires at:', expiration.toISOString())
+    console.log('[adminFetcher] Token is expired:', expiration < new Date())
+  } else {
+    console.log('[adminFetcher] Could not determine token expiration')
+  }
 
   const baseUrl = process.env.BACKEND_API_URL || 'http://localhost:3001'
 
