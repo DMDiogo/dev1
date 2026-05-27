@@ -1,14 +1,21 @@
-import 'next-auth'
-import 'next-auth/jwt'
-
-
 
 // types/next-auth.d.ts
-//import { DefaultSession } from "next-auth";
-//import { DefaultJWT } from "next-auth/jwt";
+import { DefaultSession } from "next-auth";
+import { DefaultJWT } from "next-auth/jwt";
 
 // Define Role type
-export type Role = 'ADMIN' | 'RESTAURANT' | 'CLIENT' | 'DRIVER';
+export type Role = 'ADMIN' | 'RESTAURANT' | 'CLIENT' | 'DRIVER'
+
+// Order status type (used for filtering orders)
+export type OrderStatus = 
+  | 'PENDING'
+  | 'ACCEPTED_DRIVER'
+  | 'PREPARING'
+  | 'READY_FOR_PICKUP'
+  | 'PICKED_UP'
+  | 'IN_TRANSIT'
+  | 'DELIVERED'
+  | 'CANCELLED'
 
 declare module 'next-auth' {
   interface Session {

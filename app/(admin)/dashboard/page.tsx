@@ -1,3 +1,4 @@
+// app/(admin)/dashboard/page.tsx
 import { getSession } from '@/lib/session'
 import { getDashboardMetrics } from '@/lib/dashboard-stats'
 import StatsCard from '@/components/dashboard/StatsCard'
@@ -6,12 +7,24 @@ import RecentOrders from '@/components/dashboard/RecentOrders'
 import { ShoppingBag, Users, UtensilsCrossed, TrendingUp } from 'lucide-react'
 
 export default async function DashboardPage() {
-  const [session, metrics] = await Promise.all([
+  const [session, data] = await Promise.all([
     getSession(),
     getDashboardMetrics(),
   ])
 
-  const firstName = session?.user?.name?.split(' ')[0] ?? 'Admin'
+
+  // Map the backend response to the expected format
+  const metrics = {
+    totalOrders: data.totalOrders || 0,
+    totalUsers: data.totalUsers || 0,
+    totalRestaurants: data.totalRestaurants || 0,
+    revenueTotal: data.totalRevenue || 0, // Map totalRevenue to revenueTotal
+    orderChange: data.orderChange || '0%',
+    revenueChange: data.revenueChange || '0%',
+    usersToday: data.usersToday || 0,
+    monthlyRevenue: data.monthlyRevenue || [],
+    recentOrders: data.recentOrders || [],
+  }
 
   const stats = [
     {
@@ -46,6 +59,13 @@ export default async function DashboardPage() {
       change: metrics.revenueChange,
     },
   ]
+
+    // Debug: Log the actual data
+  console.log('Dashboard metrics from backend:', metrics)
+  console.log('Keys:', Object.keys(metrics))
+
+  
+  const firstName = session?.user?.name?.split(' ')[0] ?? 'Admin'
 
   return (
     <div className="space-y-8">

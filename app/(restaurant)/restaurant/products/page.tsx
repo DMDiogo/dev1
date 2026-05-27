@@ -1,5 +1,5 @@
-import { prisma } from '@/lib/prisma'
 import { requireRestaurant } from '@/lib/session'
+import { adminFetcher } from '@/lib/api/api_server_backend'
 import {
   Table,
   TableBody,
@@ -16,15 +16,8 @@ export default async function RestaurantProductsPage() {
   const restaurantId = session.user.restaurantId!
 
   const [products, restaurant] = await Promise.all([
-    prisma.product.findMany({
-      where: { restaurantId },
-      orderBy: { name: 'asc' },
-      include: { restaurant: { select: { name: true } } },
-    }),
-    prisma.restaurant.findUnique({
-      where: { id: restaurantId },
-      select: { id: true, name: true },
-    }),
+    adminFetcher<any[]>(`/api/products?restaurantId=${restaurantId}`),
+    adminFetcher<any>(`/api/restaurants/${restaurantId}`),
   ])
 
   const restaurants = restaurant ? [restaurant] : []
@@ -55,7 +48,7 @@ export default async function RestaurantProductsPage() {
               </TableCell>
               <TableCell>{formatCurrency(product.price)}</TableCell>
               <TableCell className="text-gray-500 text-xs">
-                {product.taxPercentage.replace('VAT_', '')}%
+                {product.taxPercentage?.replace('VAT_', '')}%
               </TableCell>
             </TableRow>
           ))}

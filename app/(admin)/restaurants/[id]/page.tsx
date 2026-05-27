@@ -1,11 +1,13 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { prisma } from '@/lib/prisma'
+import { getRestaurantById } from '@/lib/api/api_server_backend'
 import Card from '@/components/ui/Card'
 import EditRestaurantForm from '@/components/restaurants/EditRestaurantForm'
 import WorkingHoursEditor from '@/components/restaurants/WorkingHoursEditor'
 import { mergeWithDefaults } from '@/lib/working-hours'
 import { ArrowLeft, MapPin, Phone, Mail } from 'lucide-react'
+
+import RestaurantLogo from '@/components/ui/RestaurantLogo'
 
 export default async function RestaurantDetailPage({
   params,
@@ -13,15 +15,8 @@ export default async function RestaurantDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const restaurant = await prisma.restaurant.findUnique({
-    where: { id },
-    include: {
-      workingHours: true,
-      paymentMethods: true,
-      products: { take: 10, orderBy: { name: 'asc' } },
-      _count: { select: { products: true, orderItems: true } },
-    },
-  })
+
+  const restaurant = await getRestaurantById(id)
 
   if (!restaurant) notFound()
 
@@ -35,14 +30,11 @@ export default async function RestaurantDetailPage({
           <ArrowLeft size={20} />
         </Link>
         <div className="flex items-center gap-4">
-          {restaurant.logo && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={restaurant.logo}
-              alt={restaurant.name}
-              className="w-14 h-14 rounded-xl object-cover"
+          <RestaurantLogo
+              logoPath={restaurant.logo}
+              name={restaurant.name}
+              className="w-14 h-14"
             />
-          )}
           <div>
             <h1 className="font-display text-3xl font-bold text-white">
               {restaurant.name}
@@ -92,13 +84,13 @@ export default async function RestaurantDetailPage({
             <div>
               <dt className="text-gray-500">Produtos</dt>
               <dd className="text-2xl font-display font-bold text-white">
-                {restaurant._count.products}
+                {restaurant._count?.products ?? 0}
               </dd>
             </div>
             <div>
               <dt className="text-gray-500">Itens vendidos</dt>
               <dd className="text-2xl font-display font-bold text-white">
-                {restaurant._count.orderItems}
+                {restaurant._count?.orderItems ?? 0}
               </dd>
             </div>
           </dl>
@@ -122,7 +114,7 @@ export default async function RestaurantDetailPage({
         initialHours={mergeWithDefaults(restaurant.workingHours)}
       />
 
-      {restaurant.products.length > 0 && (
+      {restaurant.products && restaurant.products.length > 0 && (
         <Card title="Produtos">
           <ul className="divide-y divide-surface-border">
             {restaurant.products.map((p) => (

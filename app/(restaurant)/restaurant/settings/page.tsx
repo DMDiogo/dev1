@@ -1,16 +1,13 @@
-import { prisma } from '@/lib/prisma'
 import { requireRestaurant } from '@/lib/session'
 import WorkingHoursEditor from '@/components/restaurants/WorkingHoursEditor'
 import { mergeWithDefaults } from '@/lib/working-hours'
+import { getRestaurantById } from '@/lib/api/api_server_backend'
 
 export default async function RestaurantSettingsPage() {
   const session = await requireRestaurant()
   const restaurantId = session.user.restaurantId!
 
-  const restaurant = await prisma.restaurant.findUnique({
-    where: { id: restaurantId },
-    include: { workingHours: true },
-  })
+  const restaurant = await getRestaurantById(restaurantId)
 
   if (!restaurant) {
     return (

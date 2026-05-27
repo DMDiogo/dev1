@@ -1,12 +1,15 @@
+// app/api/restaurants/[id]/working-hours/route.ts
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { fetcher } from '@/lib/api/api_server_backend'
 import {
   canManageRestaurant,
   normalizeWorkingHours,
   type WorkingHourInput,
 } from '@/lib/working-hours'
-import { adminFetcher } from '@/lib/api/api_server_backend'
+
+type WeekDay = 'SUNDAY' | 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY'
 
 export const runtime = 'nodejs'
 
@@ -15,15 +18,16 @@ function parseHours(body: unknown): WorkingHourInput[] | null {
   const hours = (body as { hours: unknown }).hours
   if (!Array.isArray(hours)) return null
 
-  const validDays = new Set(['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const)
+  const validDays = new Set<WeekDay>(['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'])
   const parsed: WorkingHourInput[] = []
 
   for (const row of hours) {
     if (!row || typeof row !== 'object') continue
     const r = row as Record<string, unknown>
-    if (!validDays.has(r.dayOfWeek as WorkingHourInput['dayOfWeek'])) continue
+    const dayOfWeek = r.dayOfWeek as string
+    if (!validDays.has(dayOfWeek as WeekDay)) continue
     parsed.push({
-      dayOfWeek: r.dayOfWeek as WorkingHourInput['dayOfWeek'],
+      dayOfWeek: dayOfWeek as WeekDay,
       startTime: String(r.startTime ?? '09:00'),
       endTime: String(r.endTime ?? '22:00'),
       isOpen: Boolean(r.isOpen),
@@ -44,16 +48,23 @@ export async function GET(
   }
 
   const { id } = await params
-  if (!canManageRestaurant(session.user, id)) {
+  
+  // Check if user can manage this restaurant
+  const canManage = session.user.role === 'ADMIN' || 
+                   (session.user.role === 'RESTAURANT' && session.user.restaurantId === id)
+  
+  if (!canManage) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
   }
 
   try {
-    const hours = await adminFetcher<WorkingHourInput[]>(`/api/restaurants/${id}/working-hours`)
-    return NextResponse.json(hours)
+    // Fetch working hours from the dedicated backend endpoint
+    const workingHours = await fetcher<any>(`/api/restaurants/${id}/working-hours`, {}, false)
+    return NextResponse.json(workingHours || [])
   } catch (error) {
-    console.error('[api/working-hours GET] error:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    console.error('[GET working-hours] Error:', error)
+    // Return empty array if no working hours found
+    return NextResponse.json([])
   }
 }
 
@@ -68,19 +79,18 @@ export async function PUT(
     }
 
     const { id } = await params
-    if (!canManageRestaurant(session.user, id)) {
+    
+    // Check authorization
+    const canManage = session.user.role === 'ADMIN' || 
+                     (session.user.role === 'RESTAURANT' && session.user.restaurantId === id)
+    
+    if (!canManage) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
     }
 
-    const restaurant = await adminFetcher<any>(`/api/restaurants/${id}`)
-    if (!restaurant) {
-      return NextResponse.json(
-        { error: 'Restaurante não encontrado' },
-        { status: 404 }
-      )
-    }
-
-    const hours = parseHours(await request.json())
+    const body = await request.json()
+    const hours = parseHours(body)
+    
     if (!hours) {
       return NextResponse.json(
         { error: 'Horários inválidos' },
@@ -88,14 +98,23 @@ export async function PUT(
       )
     }
 
-    const saved = await adminFetcher<WorkingHourInput[]>(`/api/restaurants/${id}/working-hours`, {
-      method: 'PUT',
-      body: JSON.stringify({ hours }),
-    })
+    // Format hours for backend - convert isOpen to the format backend expects
+    const formattedHours = hours.map(h => ({
+      dayOfWeek: h.dayOfWeek,
+      startTime: h.startTime,
+      endTime: h.endTime,
+      isOpen: h.isOpen  // Backend uses 'isOpen' (not 'isClosed')
+    }))
 
-    return NextResponse.json({ hours: saved })
+    // Use the dedicated working-hours endpoint on your backend
+    const updatedWorkingHours = await fetcher<any>(`/api/restaurants/${id}/working-hours`, {
+      method: 'PATCH',  // Your backend uses PATCH for working hours
+      body: JSON.stringify({ workingHours: formattedHours }),
+    }, true)  // Requires authentication
+
+    return NextResponse.json({ hours: updatedWorkingHours })
   } catch (error) {
-    console.error('[api/working-hours PUT] error:', error)
+    console.error('[api/working-hours PUT]', error)
     return NextResponse.json(
       { error: 'Erro ao guardar horários' },
       { status: 500 }

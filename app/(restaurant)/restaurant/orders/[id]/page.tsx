@@ -1,8 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { prisma } from '@/lib/prisma'
 import { requireRestaurant } from '@/lib/session'
-import { ordersForRestaurant } from '@/lib/restaurant-scope'
+import { adminFetcher } from '@/lib/api/api_server_backend'
 import OrderStatusBadge from '@/components/orders/OrderStatusBadge'
 import OrderStatusSelect from '@/components/orders/OrderStatusSelect'
 import Card from '@/components/ui/Card'
@@ -18,17 +17,7 @@ export default async function RestaurantOrderDetailPage({
   const restaurantId = session.user.restaurantId!
   const { id } = await params
 
-  const order = await prisma.order.findFirst({
-    where: { id, ...ordersForRestaurant(restaurantId) },
-    include: {
-      user: true,
-      driver: true,
-      items: {
-        where: { restaurantId },
-        include: { product: true, restaurant: true },
-      },
-    },
-  })
+  const order = await adminFetcher<any>(`/api/restaurant/${restaurantId}/orders/${id}`)
 
   if (!order) notFound()
 
@@ -61,11 +50,11 @@ export default async function RestaurantOrderDetailPage({
           <dl className="space-y-2 text-sm">
             <div>
               <dt className="text-gray-500">Nome</dt>
-              <dd className="text-white">{order.user.name}</dd>
+              <dd className="text-white">{order.user?.name}</dd>
             </div>
             <div>
               <dt className="text-gray-500">Telefone</dt>
-              <dd className="text-white">{order.user.telephone}</dd>
+              <dd className="text-white">{order.user?.telephone}</dd>
             </div>
           </dl>
         </Card>
@@ -79,7 +68,7 @@ export default async function RestaurantOrderDetailPage({
               </div>
               <div>
                 <dt className="text-gray-500">Telefone</dt>
-                <dd className="text-white">{order.driver.telephone}</dd>
+              <dd className="text-white">{order.driver.telephone}</dd>
               </div>
             </dl>
           ) : (
@@ -90,7 +79,7 @@ export default async function RestaurantOrderDetailPage({
         <Card title="Total (itens do restaurante)">
           <p className="text-2xl font-display font-bold text-brand-500">
             {formatCurrency(
-              order.items.reduce((s, i) => s + i.price * i.quantity, 0)
+              order.items?.reduce((s: number, i: any) => s + i.price * i.quantity, 0) ?? 0
             )}
           </p>
         </Card>
@@ -98,13 +87,13 @@ export default async function RestaurantOrderDetailPage({
 
       <Card title="Itens do seu restaurante">
         <ul className="divide-y divide-surface-border">
-          {order.items.map((item) => (
+          {order.items?.map((item: any) => (
             <li
               key={item.id}
               className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
             >
               <div>
-                <p className="text-white font-medium">{item.product.name}</p>
+                <p className="text-white font-medium">{item.product?.name}</p>
                 <p className="text-xs text-gray-500">Qtd: {item.quantity}</p>
               </div>
               <span className="text-white font-medium">

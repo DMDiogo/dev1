@@ -1,6 +1,5 @@
-import { prisma } from '@/lib/prisma'
 import { requireRestaurant } from '@/lib/session'
-import { ordersForRestaurant } from '@/lib/restaurant-scope'
+import { getRestaurantDrivers } from '@/lib/api/api_server_backend'
 import Badge from '@/components/ui/Badge'
 import EmptyState from '@/components/ui/EmptyState'
 import StatsCard from '@/components/dashboard/StatsCard'
@@ -13,7 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/Table'
 import { Truck, Package, CheckCircle2 } from 'lucide-react'
-import { OrderStatus } from '@prisma/client'
+import type { OrderStatus } from '@/types/next-auth'
 
 const ACTIVE_STATUSES: OrderStatus[] = [
   'ACCEPTED_DRIVER',
@@ -26,45 +25,16 @@ const ACTIVE_STATUSES: OrderStatus[] = [
 export default async function RestaurantDriversPage() {
   const session = await requireRestaurant()
   const restaurantId = session.user.restaurantId!
-  const scope = ordersForRestaurant(restaurantId)
 
-  const ordersWithDrivers = await prisma.order.findMany({
-    where: { ...scope, driverId: { not: null } },
-    select: { driverId: true },
-    distinct: ['driverId'],
-  })
+  const [drivers, stats] = await Promise.all([
+    getRestaurantDrivers(restaurantId),
+    getRestaurantDrivers(restaurantId),
+  ])
 
-  const driverIds = ordersWithDrivers
-    .map((o) => o.driverId)
-    .filter((id): id is string => id !== null)
-
-  const [drivers, activeForRestaurant, completedForRestaurant] =
-    await Promise.all([
-      driverIds.length === 0
-        ? []
-        : prisma.user.findMany({
-            where: { id: { in: driverIds }, role: 'DRIVER' },
-            include: {
-              driverOrders: {
-                where: scope,
-                select: { id: true, status: true },
-              },
-            },
-          }),
-      prisma.order.count({
-        where: {
-          ...scope,
-          driverId: { not: null },
-          status: { in: ACTIVE_STATUSES },
-        },
-      }),
-      prisma.order.count({
-        where: { ...scope, status: 'DELIVERED', driverId: { not: null } },
-      }),
-    ])
-
+  const activeForRestaurant = stats.activeDeliveries ?? 0
+  const completedForRestaurant = stats.completedDeliveries ?? 0
   const busyDrivers = drivers.filter((d) =>
-    d.driverOrders.some((o) => ACTIVE_STATUSES.includes(o.status))
+    ACTIVE_STATUSES.includes(d.driverOrders?.some(o => ACTIVE_STATUSES.includes(o.status)) ? 'ACCEPTED_DRIVER' : null) as OrderStatus
   ).length
 
   return (
@@ -119,9 +89,7 @@ export default async function RestaurantDriversPage() {
           </TableHead>
           <TableBody>
             {drivers.map((driver) => {
-              const isBusy = driver.driverOrders.some((o) =>
-                ACTIVE_STATUSES.includes(o.status)
-              )
+              const isBusy = driver.driverOrders?.some(o => ACTIVE_STATUSES.includes(o.status)) ?? false
               return (
                 <TableRow key={driver.id}>
                   <TableCell className="font-medium text-white">
@@ -129,7 +97,7 @@ export default async function RestaurantDriversPage() {
                   </TableCell>
                   <TableCell>{driver.email}</TableCell>
                   <TableCell>{driver.telephone}</TableCell>
-                  <TableCell>{driver.driverOrders.length}</TableCell>
+                  <TableCell>{driver.driverOrders?.length ?? 0}</TableCell>
                   <TableCell>
                     <Badge variant={isBusy ? 'warning' : 'success'}>
                       {isBusy ? 'Em entrega' : 'Disponível'}

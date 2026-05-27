@@ -1,6 +1,14 @@
-import { prisma } from '@/lib/prisma'
 import OrdersTable from '@/components/orders/OrdersTable'
-import { Prisma } from '@prisma/client'
+import { getOrders } from '@/lib/api/api_server_backend'
+
+type OrderWhereInput = {
+  OR?: Array<{
+    user?: { name?: { contains?: string; mode?: string } }
+    driver?: { name?: { contains?: string; mode?: string } }
+    items?: { some?: { restaurant?: { name?: { contains?: string; mode?: string } } } }
+    orderCounter?: number
+  }>
+} | undefined
 
 export default async function OrdersPage({
   searchParams,
@@ -10,7 +18,7 @@ export default async function OrdersPage({
   const { q } = await searchParams
   const query = q?.trim()
 
-  const where: Prisma.OrderWhereInput | undefined = query
+  const where: OrderWhereInput = query
     ? {
         OR: [
           { user: { name: { contains: query, mode: 'insensitive' } } },
@@ -25,21 +33,13 @@ export default async function OrdersPage({
             },
           },
           ...(Number.isFinite(Number(query))
-            ? [{ orderCounter: Number(query) }]
+            ? [{ orderCounter: Number(query) } as any]
             : []),
         ],
       }
     : undefined
 
-  const orders = await prisma.order.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-    include: {
-      user: { select: { name: true } },
-      driver: { select: { name: true } },
-      items: { include: { restaurant: { select: { name: true } } } },
-    },
-  })
+  const orders = await getOrders(query)
 
   return (
     <div className="space-y-6">

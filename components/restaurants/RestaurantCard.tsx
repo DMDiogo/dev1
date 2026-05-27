@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { MapPin, Phone } from 'lucide-react'
+import RestaurantLogo from '@/components/ui/RestaurantLogo'
 
 type RestaurantCardProps = {
   id: string
@@ -30,14 +31,11 @@ export default function RestaurantCard({
             <span>{address}</span>
           </div>
         </div>
-        {logo && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={logo}
-            alt={name}
-            className="w-10 h-10 rounded-lg object-cover"
-          />
-        )}
+        <RestaurantLogo
+          logoPath={logo}
+          name={name}
+          className="w-10 h-10"
+        />
       </div>
 
       {telephone && (

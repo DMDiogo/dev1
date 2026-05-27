@@ -1,4 +1,3 @@
-import { prisma } from '@/lib/prisma'
 import Badge from '@/components/ui/Badge'
 import EmptyState from '@/components/ui/EmptyState'
 import StatsCard from '@/components/dashboard/StatsCard'
@@ -12,7 +11,8 @@ import {
 } from '@/components/ui/Table'
 import { formatDate } from '@/lib/utils'
 import { Truck, Package, CheckCircle2 } from 'lucide-react'
-import { OrderStatus } from '@prisma/client'
+import { getDrivers } from '@/lib/api/api_server_backend'
+import type { OrderStatus } from '@/types/next-auth'
 
 const ACTIVE_STATUSES: OrderStatus[] = [
   'ACCEPTED_DRIVER',
@@ -23,28 +23,9 @@ const ACTIVE_STATUSES: OrderStatus[] = [
 ]
 
 export default async function DriversPage() {
-  const [drivers, activeDeliveries, completedDeliveries] = await Promise.all([
-    prisma.user.findMany({
-      where: { role: 'DRIVER' },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        _count: { select: { driverOrders: true } },
-        driverOrders: {
-          where: { status: { in: ACTIVE_STATUSES } },
-          select: { id: true },
-          take: 1,
-        },
-      },
-    }),
-    prisma.order.count({
-      where: { driverId: { not: null }, status: { in: ACTIVE_STATUSES } },
-    }),
-    prisma.order.count({
-      where: { status: 'DELIVERED', driverId: { not: null } },
-    }),
-  ])
+  const drivers = await getDrivers()
 
-  const busyCount = drivers.filter((d) => d.driverOrders.length > 0).length
+  const busyCount = drivers.filter((d) => d.driverOrders?.some(o => ACTIVE_STATUSES.includes(o.status as OrderStatus))).length
 
   return (
     <div className="space-y-6">
@@ -67,14 +48,14 @@ export default async function DriversPage() {
         />
         <StatsCard
           label="Em entrega"
-          value={activeDeliveries}
+          value={drivers.filter(d => d.driverOrders?.some(o => ACTIVE_STATUSES.includes(o.status as OrderStatus))).length}
           icon={Package}
           color="blue"
           change={`${busyCount} motoristas ocupados`}
         />
         <StatsCard
           label="Entregas concluídas"
-          value={completedDeliveries}
+          value={drivers.reduce((acc, d) => acc + (d.driverOrders?.filter(o => o.status === 'DELIVERED').length ?? 0), 0)}
           icon={CheckCircle2}
           color="green"
           change="total histórico"
@@ -101,7 +82,7 @@ export default async function DriversPage() {
           </TableHead>
           <TableBody>
             {drivers.map((driver) => {
-              const isBusy = driver.driverOrders.length > 0
+              const isBusy = driver.driverOrders?.some(o => ACTIVE_STATUSES.includes(o.status as OrderStatus)) ?? false
               return (
                 <TableRow key={driver.id}>
                   <TableCell className="font-medium text-white">
@@ -109,7 +90,7 @@ export default async function DriversPage() {
                   </TableCell>
                   <TableCell>{driver.email}</TableCell>
                   <TableCell>{driver.telephone}</TableCell>
-                  <TableCell>{driver._count.driverOrders}</TableCell>
+                  <TableCell>{driver._count?.driverOrders ?? 0}</TableCell>
                   <TableCell>
                     <Badge variant={isBusy ? 'warning' : 'success'}>
                       {isBusy ? 'Em entrega' : 'Disponível'}

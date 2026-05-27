@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { prisma } from '@/lib/prisma'
+import { getOrderById } from '@/lib/api/api_server_backend'
 import OrderStatusBadge from '@/components/orders/OrderStatusBadge'
 import OrderStatusSelect from '@/components/orders/OrderStatusSelect'
 import Card from '@/components/ui/Card'
@@ -13,19 +13,8 @@ export default async function OrderDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const order = await prisma.order.findUnique({
-    where: { id },
-    include: {
-      user: true,
-      driver: true,
-      items: {
-        include: {
-          product: true,
-          restaurant: true,
-        },
-      },
-    },
-  })
+
+  const order = await getOrderById(id)
 
   if (!order) notFound()
 
@@ -58,13 +47,13 @@ export default async function OrderDetailPage({
           <dl className="space-y-2 text-sm">
             <div>
               <dt className="text-gray-500">Nome</dt>
-              <dd className="text-white">{order.user.name}</dd>
+              <dd className="text-white">{order.user?.name}</dd>
             </div>
             <div>
               <dt className="text-gray-500">Telefone</dt>
-              <dd className="text-white">{order.user.telephone}</dd>
+              <dd className="text-white">{order.user?.telephone}</dd>
             </div>
-            {order.user.address && (
+            {order.user?.address && (
               <div>
                 <dt className="text-gray-500">Morada</dt>
                 <dd className="text-white">{order.user.address}</dd>
@@ -116,15 +105,15 @@ export default async function OrderDetailPage({
 
       <Card title="Itens do pedido">
         <ul className="divide-y divide-surface-border">
-          {order.items.map((item) => (
+          {order.items?.map((item) => (
             <li
               key={item.id}
               className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
             >
               <div>
-                <p className="text-white font-medium">{item.product.name}</p>
+                <p className="text-white font-medium">{item.product?.name}</p>
                 <p className="text-xs text-gray-500">
-                  {item.restaurant.name} · Qtd: {item.quantity}
+                  {item.restaurant?.name} · Qtd: {item.quantity}
                 </p>
               </div>
               <span className="text-white font-medium">

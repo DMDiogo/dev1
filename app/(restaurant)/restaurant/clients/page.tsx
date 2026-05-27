@@ -1,5 +1,5 @@
-import { prisma } from '@/lib/prisma'
 import { requireRestaurant } from '@/lib/session'
+import { getClients } from '@/lib/api/api_server_backend'
 import {
   Table,
   TableBody,
@@ -14,23 +14,7 @@ export default async function RestaurantClientsPage() {
   const session = await requireRestaurant()
   const restaurantId = session.user.restaurantId!
 
-  const clients = await prisma.user.findMany({
-    where: {
-      role: 'CLIENT',
-      orders: {
-        some: {
-          items: { some: { restaurantId } },
-        },
-      },
-    },
-    orderBy: { createdAt: 'desc' },
-    include: {
-      orders: {
-        where: { items: { some: { restaurantId } } },
-        select: { id: true },
-      },
-    },
-  })
+  const clients = await getClients(restaurantId)
 
   return (
     <div className="space-y-6">
@@ -59,7 +43,7 @@ export default async function RestaurantClientsPage() {
               </TableCell>
               <TableCell>{client.email}</TableCell>
               <TableCell>{client.telephone}</TableCell>
-              <TableCell>{client.orders.length}</TableCell>
+              <TableCell>{client.orders?.length ?? 0}</TableCell>
               <TableCell className="text-gray-500 text-xs">
                 {formatDate(client.createdAt)}
               </TableCell>

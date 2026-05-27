@@ -1,13 +1,9 @@
-import { prisma } from '@/lib/prisma'
 import RestaurantCard from '@/components/restaurants/RestaurantCard'
 import NewRestaurantButton from '@/components/restaurants/NewRestaurantButton'
+import { getRestaurants } from '@/lib/api/api_server_backend'
 
 export default async function RestaurantsPage() {
-  const restaurants = await prisma.restaurant.findMany({
-    include: {
-      _count: { select: { products: true, orderItems: true } },
-    },
-  })
+  const restaurants = await getRestaurants()
 
   return (
     <div className="space-y-6">
@@ -40,8 +36,8 @@ export default async function RestaurantsPage() {
             address={r.address}
             telephone={r.telephone}
             logo={r.logo}
-            productCount={r._count.products}
-            orderItemCount={r._count.orderItems}
+            productCount={r._count?.products ?? 0}
+            orderItemCount={r._count?.orderItems ?? 0}
           />
         ))}
       </div>

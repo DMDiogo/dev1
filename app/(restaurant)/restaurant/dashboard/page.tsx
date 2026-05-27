@@ -1,6 +1,5 @@
-import { prisma } from '@/lib/prisma'
 import { requireRestaurant } from '@/lib/session'
-import { ordersForRestaurant } from '@/lib/restaurant-scope'
+import { getRestaurantDashboardStats } from '@/lib/api/api_server_backend'
 import StatsCard from '@/components/dashboard/StatsCard'
 import RecentOrders from '@/components/dashboard/RecentOrders'
 import { ShoppingBag, Users, Package, TrendingUp } from 'lucide-react'
@@ -8,59 +7,34 @@ import { ShoppingBag, Users, Package, TrendingUp } from 'lucide-react'
 export default async function RestaurantDashboardPage() {
   const session = await requireRestaurant()
   const restaurantId = session.user.restaurantId!
-  const orderFilter = ordersForRestaurant(restaurantId)
 
-  const [orderCount, productCount, revenue, recentOrders, clientCount] =
-    await Promise.all([
-      prisma.order.count({ where: orderFilter }),
-      prisma.product.count({ where: { restaurantId } }),
-      prisma.orderItem.aggregate({
-        where: { restaurantId },
-        _sum: { price: true },
-      }),
-      prisma.order.findMany({
-        where: orderFilter,
-        take: 5,
-        orderBy: { createdAt: 'desc' },
-        include: { user: { select: { name: true } } },
-      }),
-      prisma.user.count({
-        where: {
-          role: 'CLIENT',
-          orders: {
-            some: {
-              items: { some: { restaurantId } },
-            },
-          },
-        },
-      }),
-    ])
+  const stats = await getRestaurantDashboardStats(restaurantId)
 
-  const stats = [
+  const formattedStats = [
     {
       label: 'Pedidos',
-      value: orderCount,
+      value: stats.orderCount ?? 0,
       icon: ShoppingBag,
       color: 'orange' as const,
       change: 'do seu restaurante',
     },
     {
       label: 'Clientes',
-      value: clientCount,
+      value: stats.clientCount ?? 0,
       icon: Users,
       color: 'blue' as const,
       change: 'com pedidos aqui',
     },
     {
       label: 'Produtos',
-      value: productCount,
+      value: stats.productCount ?? 0,
       icon: Package,
       color: 'green' as const,
       change: 'no menu',
     },
     {
       label: 'Receita (itens)',
-      value: `${(revenue._sum.price ?? 0).toLocaleString('pt-AO')} Kz`,
+      value: `${((stats.revenue?._sum?.price ?? 0) as number).toLocaleString('pt-AO')} Kz`,
       icon: TrendingUp,
       color: 'purple' as const,
       change: 'vendas registadas',
@@ -77,13 +51,13 @@ export default async function RestaurantDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {stats.map((stat) => (
+        {formattedStats.map((stat) => (
           <StatsCard key={stat.label} {...stat} />
         ))}
       </div>
 
       <RecentOrders
-        orders={recentOrders}
+        orders={stats.recentOrders ?? []}
         orderLinkPrefix="/restaurant/orders"
         ordersListHref="/restaurant/orders"
       />

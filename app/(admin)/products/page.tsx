@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma'
+import { fetcher } from '@/lib/api/api_server_backend'
 import {
   Table,
   TableBody,
@@ -12,15 +12,30 @@ import NewProductButton from '@/components/products/NewProductButton'
 
 export default async function ProductsPage() {
   const [products, restaurants] = await Promise.all([
-    prisma.product.findMany({
-      orderBy: { name: 'asc' },
-      include: { restaurant: { select: { name: true } } },
-    }),
-    prisma.restaurant.findMany({
-      select: { id: true, name: true },
-      orderBy: { name: 'asc' },
-    }),
+    fetcher<any[]>('/api/products', {}, true), // requires auth
+    fetcher<any[]>('/api/restaurants', {}, false) // public endpoint
   ])
+
+  console.log('Products loaded:', products?.length || 0);
+  console.log('Restaurants loaded:', restaurants?.length || 0);
+
+  console.log(products[0]);
+
+  // Helper function to format tax percentage
+  const formatTaxPercentage = (taxPercentage: string | number | null | undefined): string => {
+    console.log('IVA ', taxPercentage);
+    if (!taxPercentage) return '0%';
+    
+    if (typeof taxPercentage === 'string') {
+      return taxPercentage.replace('VAT_', '') + '%';
+    }
+    
+    if (typeof taxPercentage === 'number') {
+      return taxPercentage + '%';
+    }
+    
+    return '0%';
+  };
 
   return (
     <div className="space-y-6">
@@ -30,10 +45,10 @@ export default async function ProductsPage() {
             Produtos
           </h1>
           <p className="text-gray-400 mt-1">
-            {products.length} produtos em todos os restaurantes
+            {products?.length || 0} produtos em todos os restaurantes
           </p>
         </div>
-        <NewProductButton restaurants={restaurants} />
+        <NewProductButton restaurants={restaurants || []} />
       </div>
 
       <Table>
@@ -46,22 +61,28 @@ export default async function ProductsPage() {
           </TableRow>
         </TableHead>
         <TableBody>
-          {products.map((product) => (
+          {products?.map((product) => (
             <TableRow key={product.id}>
               <TableCell className="font-medium text-white">
                 {product.name}
               </TableCell>
               <TableCell className="text-gray-400">
-                {product.restaurant.name}
+                {product.restaurant?.name ?? 'Desconhecido'}
               </TableCell>
-              <TableCell>{formatCurrency(product.price)}</TableCell>
+              <TableCell>{formatCurrency(product.price || 0)}</TableCell>
               <TableCell className="text-gray-500 text-xs">
-                {product.taxPercentage.replace('VAT_', '')}%
+                {formatTaxPercentage(product.taxPercentage)}
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+      
+      {(!products || products.length === 0) && (
+        <div className="text-center py-12 text-gray-400">
+          Nenhum produto encontrado. Clique em "Novo Produto" para adicionar.
+        </div>
+      )}
     </div>
   )
 }

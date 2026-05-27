@@ -1,4 +1,3 @@
-import { prisma } from '@/lib/prisma'
 import {
   Table,
   TableBody,
@@ -8,13 +7,10 @@ import {
   TableRow,
 } from '@/components/ui/Table'
 import { formatDate } from '@/lib/utils'
+import { adminFetcher } from '@/lib/api/api_server_backend'
 
 export default async function UsersPage() {
-  const users = await prisma.user.findMany({
-    where: { role: 'CLIENT' },
-    orderBy: { createdAt: 'desc' },
-    include: { _count: { select: { orders: true } } },
-  })
+  const users = await adminFetcher<any[]>(`/api/users?role=CLIENT`)
 
   return (
     <div className="space-y-6">
@@ -43,7 +39,7 @@ export default async function UsersPage() {
               </TableCell>
               <TableCell>{user.email}</TableCell>
               <TableCell>{user.telephone}</TableCell>
-              <TableCell>{user._count.orders}</TableCell>
+              <TableCell>{user._count?.orders ?? 0}</TableCell>
               <TableCell className="text-gray-500 text-xs">
                 {formatDate(user.createdAt)}
               </TableCell>
