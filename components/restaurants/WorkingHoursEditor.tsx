@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
-import { WeekDay } from '@prisma/client'
+import { WeekDay } from '@/lib/working-hours'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import {

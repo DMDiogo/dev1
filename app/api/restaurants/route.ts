@@ -1,21 +1,20 @@
-import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
 import { geocodeAddress } from '@/lib/geocode'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { seedDefaultWorkingHours } from '@/lib/working-hours'
+import { adminFetcher } from '@/lib/api/api_server_backend'
 
 export const runtime = 'nodejs'
 
 export async function GET() {
-  const restaurants = await prisma.restaurant.findMany({
-    include: {
-      workingHours: true,
-      paymentMethods: true,
-      _count: { select: { products: true } },
-    },
-  })
-  return NextResponse.json(restaurants)
+  try {
+    const restaurants = await adminFetcher<any[]>('/api/restaurants')
+    return NextResponse.json(restaurants)
+  } catch (error) {
+    console.error('[api/restaurants GET] error:', error)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  }
 }
 
 export async function POST(request: Request) {
@@ -38,23 +37,24 @@ export async function POST(request: Request) {
     const trimmedAddress = address.trim()
     const geocoded = await geocodeAddress(trimmedAddress)
 
-    const restaurant = await prisma.$transaction(async (tx) => {
-      const created = await tx.restaurant.create({
-        data: {
-          name: name.trim(),
-          address: trimmedAddress,
-          telephone: telephone?.trim() || null,
-          email: email?.trim() || null,
-          taxId: taxId?.trim() || null,
-          website: website?.trim() || null,
-          logo: logo?.trim() || null,
-          latitude: geocoded?.latitude ?? null,
-          longitude: geocoded?.longitude ?? null,
-        },
-      })
-      await seedDefaultWorkingHours(tx, created.id)
-      return created
+    const restaurantData = {
+      name: name.trim(),
+      address: trimmedAddress,
+      telephone: telephone?.trim() || null,
+      email: email?.trim() || null,
+      taxId: taxId?.trim() || null,
+      website: website?.trim() || null,
+      logo: logo?.trim() || null,
+      latitude: geocoded?.latitude ?? null,
+      longitude: geocoded?.longitude ?? null,
+    }
+
+    const restaurant = await adminFetcher<any>('/api/restaurants', {
+      method: 'POST',
+      body: JSON.stringify(restaurantData),
     })
+
+    await seedDefaultWorkingHours(null, restaurant.id) // Assuming seedDefaultWorkingHours doesn't need DB transaction anymore
 
     return NextResponse.json(
       {
@@ -67,10 +67,7 @@ export async function POST(request: Request) {
       { status: 201 }
     )
   } catch (error) {
-    console.error('[api/restaurants POST]', error)
-    return NextResponse.json(
-      { error: 'Erro ao criar restaurante' },
-      { status: 400 }
-    )
+    console.error('[api/restaurants POST] error:', error)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }

@@ -1,13 +1,12 @@
+// lib/validate-user.ts
 import bcrypt from 'bcryptjs'
-import { prisma } from '@/lib/prisma'
+import { findUserForLogin } from '@/lib/api/api_server_backend' // Changed import
 
 export async function validateUserCredentials(email: string, password: string) {
   const normalizedEmail = email.toLowerCase().trim()
 
-  const user = await prisma.user.findUnique({
-    where: { email: normalizedEmail },
-    include: { restaurant: { select: { name: true } } },
-  })
+  // Use the public version for login
+  const user = await findUserForLogin(normalizedEmail) // Changed this line
 
   if (!user) {
     return { ok: false as const, reason: 'not_found' as const }
@@ -33,7 +32,7 @@ export async function validateUserCredentials(email: string, password: string) {
       email: user.email,
       role: user.role,
       restaurantId: user.restaurantId,
-      restaurantName: user.restaurant?.name ?? null,
+      restaurantName: user.restaurantName ?? null,
       needsSetup,
     },
   }

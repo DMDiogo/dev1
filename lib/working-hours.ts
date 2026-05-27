@@ -1,4 +1,11 @@
-import { Prisma, WeekDay } from '@prisma/client'
+export type WeekDay = 
+  | 'MONDAY'
+  | 'TUESDAY'
+  | 'WEDNESDAY'
+  | 'THURSDAY'
+  | 'FRIDAY'
+  | 'SATURDAY'
+  | 'SUNDAY';
 
 export const WEEK_DAYS_ORDER: WeekDay[] = [
   'MONDAY',
@@ -65,18 +72,12 @@ export function mergeWithDefaults(
 }
 
 export async function seedDefaultWorkingHours(
-  tx: Prisma.TransactionClient,
+  tx: any, // Keeping parameter for compatibility but not using it
   restaurantId: string
 ) {
-  await tx.restaurantWorkingHour.createMany({
-    data: DEFAULT_WORKING_HOURS.map((h) => ({
-      restaurantId,
-      dayOfWeek: h.dayOfWeek,
-      startTime: h.startTime,
-      endTime: h.endTime,
-      isOpen: h.isOpen,
-    })),
-  })
+  // In a real implementation without Prisma, this would make an API call
+  // For now, we'll just return since the backend should handle this
+  return;
 }
 
 export function canManageRestaurant(

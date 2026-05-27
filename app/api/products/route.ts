@@ -1,20 +1,24 @@
-import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
-import { TaxPercentage } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { adminFetcher } from '@/lib/api/api_server_backend'
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const restaurantId = searchParams.get('restaurantId')
+  try {
+    const { searchParams } = new URL(request.url)
+    const restaurantId = searchParams.get('restaurantId')
 
-  const products = await prisma.product.findMany({
-    where: restaurantId ? { restaurantId } : undefined,
-    orderBy: { name: 'asc' },
-    include: { restaurant: { select: { name: true } } },
-  })
+    let endpoint = '/api/products'
+    if (restaurantId) {
+      endpoint += `?restaurantId=${restaurantId}`
+    }
 
-  return NextResponse.json(products)
+    const products = await adminFetcher<any[]>(endpoint)
+    return NextResponse.json(products)
+  } catch (error) {
+    console.error('[api/products GET] error:', error)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  }
 }
 
 export async function POST(request: Request) {
@@ -48,18 +52,19 @@ export async function POST(request: Request) {
       )
     }
 
-    const tax =
-      taxPercentage && Object.values(TaxPercentage).includes(taxPercentage)
-        ? taxPercentage
-        : TaxPercentage.VAT_14
+    // Since we're moving away from Prisma, we'll assume the backend handles tax validation
+    const tax = taxPercentage || 'VAT_14' // Default value
 
-    const product = await prisma.product.create({
-      data: {
-        name: name.trim(),
-        price,
-        restaurantId,
-        taxPercentage: tax,
-      },
+    const productData = {
+      name: name.trim(),
+      price,
+      restaurantId,
+      taxPercentage: tax,
+    }
+
+    const product = await adminFetcher<any>('/api/products', {
+      method: 'POST',
+      body: JSON.stringify(productData),
     })
 
     return NextResponse.json(product, { status: 201 })

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
-import { prisma } from '@/lib/prisma'
+import { publicFetcher } from '@/lib/api/api_server_backend'
 
 export async function POST(request: Request) {
   try {
@@ -28,34 +28,21 @@ export async function POST(request: Request) {
       )
     }
 
-    const existing = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: email.toLowerCase().trim() },
-          { telephone: telephone.trim() },
-        ],
-      },
-    })
-
-    if (existing) {
-      return NextResponse.json(
-        { error: 'Email ou telefone já registado' },
-        { status: 409 }
-      )
-    }
-
+    // Hash the password before sending to backend
     const hashed = await bcrypt.hash(password, 12)
 
-    const user = await prisma.user.create({
-      data: {
-        name: name.trim(),
-        email: email.toLowerCase().trim(),
-        telephone: telephone.trim(),
-        password: hashed,
-        role: 'RESTAURANT',
-        restaurantId: null,
-      },
-      select: { id: true, email: true, role: true },
+    const userData = {
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      telephone: telephone.trim(),
+      password: hashed,
+      role: 'RESTAURANT',
+      restaurantId: null,
+    }
+
+    const user = await publicFetcher('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(userData),
     })
 
     return NextResponse.json({ user }, { status: 201 })

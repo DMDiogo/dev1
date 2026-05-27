@@ -1,26 +1,20 @@
-import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
+import { adminFetcher } from '@/lib/api/api_server_backend'
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const role = searchParams.get('role')
+  try {
+    const { searchParams } = new URL(request.url)
+    const role = searchParams.get('role')
 
-  const users = await prisma.user.findMany({
-    where: role
-      ? { role: role as 'CLIENT' | 'DRIVER' | 'RESTAURANT' | 'ADMIN' }
-      : undefined,
-    orderBy: { createdAt: 'desc' },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      telephone: true,
-      role: true,
-      address: true,
-      createdAt: true,
-      _count: { select: { orders: true, driverOrders: true } },
-    },
-  })
+    let endpoint = '/api/users'
+    if (role) {
+      endpoint += `?role=${role}`
+    }
 
-  return NextResponse.json(users)
+    const users = await adminFetcher<any[]>(endpoint, {}, true)
+    return NextResponse.json(users)
+  } catch (error) {
+    console.error('[api/users] error:', error)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  }
 }

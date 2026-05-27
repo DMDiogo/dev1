@@ -1,13 +1,11 @@
-import { Prisma } from '@prisma/client'
-
-export function ordersForRestaurant(restaurantId: string): Prisma.OrderWhereInput {
+export function ordersForRestaurant(restaurantId: string) {
   return {
     items: { some: { restaurantId } },
-  }
+  };
 }
 
 export function orderItemsForRestaurant(
   restaurantId: string
-): Prisma.OrderItemWhereInput {
-  return { restaurantId }
+) {
+  return { restaurantId };
 }

@@ -1,9 +1,10 @@
+// components/auth/LoginForm.tsx
 'use client'
 
 import { useState } from 'react'
 import Link from 'next/link'
 import { signIn } from 'next-auth/react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation' // Add useRouter
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import Input from '@/components/ui/Input'
 import Label from '@/components/ui/Label'
@@ -31,6 +32,7 @@ function resolveRedirect(
 }
 
 export default function LoginForm() {
+  const router = useRouter() // Add this
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl')
   const registered = searchParams.get('registered')
@@ -39,63 +41,43 @@ export default function LoginForm() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [statusText, setStatusText] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
-    setStatusText(null)
     setLoading(true)
 
     const normalizedEmail = email.toLowerCase().trim()
 
     try {
-      setStatusText('A validar credenciais...')
-
-      const loginRes = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: normalizedEmail, password }),
-      })
-
-      const loginData = await loginRes.json()
-
-      if (!loginRes.ok) {
-        setError(loginData.error ?? 'Email ou palavra-passe incorretos.')
-        setLoading(false)
-        setStatusText(null)
-        return
-      }
-
-      setStatusText('A iniciar sessão...')
-
+      // Call NextAuth directly - it will use your CredentialsProvider
       const result = await signIn('credentials', {
-        email: normalizedEmail,
-        password: loginData.loginToken,
         redirect: false,
+        email: normalizedEmail,
+        password: password, // Send the actual password, not a token
       })
 
       if (result?.error) {
-        setError('Sessão não iniciada. Reinicie o servidor e tente novamente.')
+        console.error('SignIn error:', result.error)
+        setError('Email ou palavra-passe incorretos.')
         setLoading(false)
-        setStatusText(null)
         return
       }
 
-      const destination = resolveRedirect(
-        loginData.role ?? 'ADMIN',
-        !!loginData.needsSetup,
-        callbackUrl
-      )
-
-      setStatusText('A redirecionar...')
-      // Navegação completa — evita ficar preso no login enquanto o dashboard compila
-      window.location.assign(destination)
-    } catch {
+      // Get session to know user role and setup status
+      const session = await fetch('/api/auth/session').then(res => res.json())
+      const role = session?.user?.role || 'ADMIN'
+      const needsSetup = session?.user?.needsSetup || false
+      
+      const destination = resolveRedirect(role, needsSetup, callbackUrl)
+      
+      // Navigate to dashboard
+      router.push(destination)
+    } catch (err) {
+      console.error('Login error:', err)
       setError('Erro de rede. Verifique se o servidor está a correr.')
       setLoading(false)
-      setStatusText(null)
     }
   }
 
@@ -162,7 +144,7 @@ export default function LoginForm() {
         {loading ? (
           <>
             <Loader2 size={16} className="animate-spin" />
-            {statusText ?? 'A entrar...'}
+            A entrar...
           </>
         ) : (
           'Entrar'

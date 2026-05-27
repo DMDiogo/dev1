@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
 import { geocodeAddress } from '@/lib/geocode'
 import { seedDefaultWorkingHours } from '@/lib/working-hours'
+import { adminFetcher } from '@/lib/api/api_server_backend'
 
 export const runtime = 'nodejs'
 
@@ -15,10 +15,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { restaurantId: true },
-    })
+    // Check if user already has a restaurant associated
+    const dbUser = await adminFetcher<any>(`/api/users/${session.user.id}`)
 
     if (!dbUser) {
       return NextResponse.json({ error: 'Utilizador não encontrado' }, { status: 404 })
@@ -44,28 +42,28 @@ export async function POST(request: Request) {
     const trimmedAddress = address.trim()
     const geocoded = await geocodeAddress(trimmedAddress)
 
-    const restaurant = await prisma.$transaction(async (tx) => {
-      const created = await tx.restaurant.create({
-        data: {
-          name: name.trim(),
-          address: trimmedAddress,
-          telephone: telephone?.trim() || null,
-          email: email?.trim() || null,
-          taxId: taxId?.trim() || null,
-          latitude: geocoded?.latitude ?? null,
-          longitude: geocoded?.longitude ?? null,
-        },
-      })
+    const restaurantData = {
+      name: name.trim(),
+      address: trimmedAddress,
+      telephone: telephone?.trim() || null,
+      email: email?.trim() || null,
+      taxId: taxId?.trim() || null,
+      latitude: geocoded?.latitude ?? null,
+      longitude: geocoded?.longitude ?? null,
+    }
 
-      await tx.user.update({
-        where: { id: session.user.id },
-        data: { restaurantId: created.id },
-      })
-
-      await seedDefaultWorkingHours(tx, created.id)
-
-      return created
+    const restaurant = await adminFetcher<any>('/api/restaurants', {
+      method: 'POST',
+      body: JSON.stringify(restaurantData),
     })
+
+    // Update user with restaurantId
+    await adminFetcher<any>(`/api/users/${session.user.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ restaurantId: restaurant.id }),
+    })
+
+    await seedDefaultWorkingHours(null, restaurant.id) // Assuming seedDefaultWorkingHours doesn't need DB transaction anymore
 
     return NextResponse.json(
       {
@@ -78,7 +76,7 @@ export async function POST(request: Request) {
       { status: 201 }
     )
   } catch (error) {
-    console.error('[api/restaurant/setup]', error)
+    console.error('[api/restaurant/setup] error:', error)
     return NextResponse.json(
       { error: 'Erro ao criar restaurante' },
       { status: 500 }
