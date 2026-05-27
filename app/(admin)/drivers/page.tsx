@@ -25,7 +25,7 @@ const ACTIVE_STATUSES: OrderStatus[] = [
 export default async function DriversPage() {
   const drivers = await getDrivers()
 
-  const busyCount = drivers.filter((d) => d.driverOrders?.some(o => ACTIVE_STATUSES.includes(o.status as OrderStatus))).length
+  const busyCount = drivers.filter((d) => d.driverOrders?.some((o: any) => ACTIVE_STATUSES.includes(o.status as OrderStatus))).length
 
   return (
     <div className="space-y-6">
@@ -48,14 +48,14 @@ export default async function DriversPage() {
         />
         <StatsCard
           label="Em entrega"
-          value={drivers.filter(d => d.driverOrders?.some(o => ACTIVE_STATUSES.includes(o.status as OrderStatus))).length}
+          value={drivers.filter(d => d.driverOrders?.some((o: any) => ACTIVE_STATUSES.includes(o.status as OrderStatus))).length}
           icon={Package}
           color="blue"
           change={`${busyCount} motoristas ocupados`}
         />
         <StatsCard
           label="Entregas concluídas"
-          value={drivers.reduce((acc, d) => acc + (d.driverOrders?.filter(o => o.status === 'DELIVERED').length ?? 0), 0)}
+          value={drivers.reduce((acc, d) => acc + (d.driverOrders?.filter((o: any) => o.status === 'DELIVERED').length ?? 0), 0)}
           icon={CheckCircle2}
           color="green"
           change="total histórico"
@@ -82,7 +82,7 @@ export default async function DriversPage() {
           </TableHead>
           <TableBody>
             {drivers.map((driver) => {
-              const isBusy = driver.driverOrders?.some(o => ACTIVE_STATUSES.includes(o.status as OrderStatus)) ?? false
+              const isBusy = driver.driverOrders?.some((o: any) => ACTIVE_STATUSES.includes(o.status as OrderStatus)) ?? false
               return (
                 <TableRow key={driver.id}>
                   <TableCell className="font-medium text-white">

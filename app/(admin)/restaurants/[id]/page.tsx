@@ -117,7 +117,7 @@ export default async function RestaurantDetailPage({
       {restaurant.products && restaurant.products.length > 0 && (
         <Card title="Produtos">
           <ul className="divide-y divide-surface-border">
-            {restaurant.products.map((p) => (
+            {restaurant.products.map((p: any) => (
               <li
                 key={p.id}
                 className="flex justify-between py-3 first:pt-0 last:pb-0"
