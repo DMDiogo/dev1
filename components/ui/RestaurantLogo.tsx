@@ -24,7 +24,8 @@ export default function RestaurantLogo({ logoPath, name, className = '' }: Resta
       // If it starts with /uploads
       else if (logoPath.startsWith('/uploads')) {
         console.log('backend api ', process.env.BACKEND_API_URL);
-        const apiBaseUrl = process.env.BACKEND_API_URL || 'http://localhost:3000';
+        console.log('public backend api ', process.env.NEXT_PUBLIC_BACKEND_API_URL);
+        const apiBaseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:3000';
         fullUrl = `${apiBaseUrl}${logoPath}`;
       }
       // If it's just a filename
