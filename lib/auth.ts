@@ -98,18 +98,36 @@ export const authOptions: NextAuthOptions = {
               accessToken: backendToken,
             };
             
-          } catch (fetchError) {
-            console.error('[NextAuth] Fetch error:', fetchError);
-            console.error('[NextAuth] Fetch error details:', {
-              message: fetchError.message,
-              cause: fetchError.cause,
-              stack: fetchError.stack
-            });
+          } catch (fetchError: unknown) {
+            // Properly handle unknown error type
+            console.error('[NextAuth] Fetch error occurred');
+            
+            if (fetchError instanceof Error) {
+              console.error('[NextAuth] Error message:', fetchError.message);
+              console.error('[NextAuth] Error name:', fetchError.name);
+              console.error('[NextAuth] Error stack:', fetchError.stack);
+              
+              // Check for specific error types
+              if (fetchError.name === 'TypeError' && fetchError.message.includes('fetch')) {
+                console.error('[NextAuth] Network error - unable to reach backend API');
+                console.error('[NextAuth] Make sure the backend URL is correct and accessible');
+              }
+            } else {
+              console.error('[NextAuth] Unknown error type:', fetchError);
+            }
+            
+            // Return null to indicate authentication failure
             return null;
           }
           
-        } catch (error) {
-          console.error('[NextAuth] Authorize error:', error);
+        } catch (error: unknown) {
+          console.error('[NextAuth] Authorize error occurred');
+          if (error instanceof Error) {
+            console.error('[NextAuth] Error message:', error.message);
+            console.error('[NextAuth] Error stack:', error.stack);
+          } else {
+            console.error('[NextAuth] Unknown error:', error);
+          }
           return null;
         }
       },
