@@ -81,6 +81,10 @@ export const authOptions: NextAuthOptions = {
             
             //const backendToken = loginData.loginToken || loginData.token;
             const backendToken = loginData.access_token || loginData.loginToken || loginData.token;
+
+            console.log('token ', loginData.access_token);
+            console.log('logintoken ', loginData.loginToken);
+            console.log('logindata ', loginData.token);
             
             if (!backendToken) {
               console.error('[NextAuth] No token found in response. Available fields:', Object.keys(loginData));
