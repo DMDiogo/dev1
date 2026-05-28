@@ -79,7 +79,8 @@ export const authOptions: NextAuthOptions = {
             console.log('[NextAuth] Backend response data keys:', Object.keys(loginData));
             console.log('[NextAuth] Full backend response:', JSON.stringify(loginData, null, 2));
             
-            const backendToken = loginData.loginToken || loginData.token;
+            //const backendToken = loginData.loginToken || loginData.token;
+            const backendToken = loginData.access_token || loginData.loginToken || loginData.token;
             
             if (!backendToken) {
               console.error('[NextAuth] No token found in response. Available fields:', Object.keys(loginData));
