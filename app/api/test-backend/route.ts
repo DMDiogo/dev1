@@ -14,7 +14,7 @@ export async function GET() {
       },
       body: JSON.stringify({
         email: 'admin@foodadmin.ao',
-        password: 'your-password-here', // Replace with actual password
+        password: 'admin123', // Replace with actual password
       }),
     });
     
