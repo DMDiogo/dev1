@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { MapPin, Phone } from 'lucide-react'
 import RestaurantLogo from '@/components/ui/RestaurantLogo'
+import RestaurantStatusBadge from '@/components/restaurants/RestaurantStatusBadge'
 
 type RestaurantCardProps = {
   id: string
@@ -8,6 +9,7 @@ type RestaurantCardProps = {
   address: string
   telephone: string | null
   logo: string | null
+  status?: string | null
   productCount: number
   orderItemCount: number
 }
@@ -18,14 +20,18 @@ export default function RestaurantCard({
   address,
   telephone,
   logo,
+  status,
   productCount,
   orderItemCount,
 }: RestaurantCardProps) {
   return (
     <div className="bg-surface-card border border-surface-border rounded-2xl p-5 hover:border-brand-500/30 transition-colors">
       <div className="flex items-start justify-between mb-3">
-        <div>
-          <h3 className="font-display font-semibold text-white">{name}</h3>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-display font-semibold text-white">{name}</h3>
+            {status && <RestaurantStatusBadge status={status} />}
+          </div>
           <div className="flex items-center gap-1 text-gray-400 text-xs mt-1">
             <MapPin size={12} />
             <span>{address}</span>

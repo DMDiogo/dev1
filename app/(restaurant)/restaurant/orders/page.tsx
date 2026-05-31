@@ -1,12 +1,12 @@
 import { requireRestaurant } from '@/lib/session'
-import { adminFetcher } from '@/lib/api/api_server_backend'
+import { getRestaurantOrders } from '@/lib/api/api_server_backend'
 import OrdersTable from '@/components/orders/OrdersTable'
 
 export default async function RestaurantOrdersPage() {
   const session = await requireRestaurant()
   const restaurantId = session.user.restaurantId!
 
-  const orders = await adminFetcher<any[]>(`/api/restaurant/${restaurantId}/orders`)
+  const orders = await getRestaurantOrders(restaurantId)
 
   return (
     <div className="space-y-6">

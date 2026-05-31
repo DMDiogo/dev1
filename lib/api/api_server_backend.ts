@@ -1,4 +1,13 @@
-import { getServerSession } from 'next-auth';
+import {
+  buildClientsFromOrders,
+  buildDriversFromOrders,
+  buildRestaurantDashboardStats,
+  filterOrderItemsForRestaurant,
+  filterOrdersForRestaurant,
+  orderBelongsToRestaurant,
+  unwrapList,
+} from '@/lib/restaurant-data'
+import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth';
 //import jwt from 'jsonwebtoken'
 import jwt, { JwtPayload } from 'jsonwebtoken'
@@ -390,15 +399,51 @@ export async function getDrivers() {
 
 // Client API functions
 export async function getClients(restaurantId: string) {
-  return adminFetcher<any[]>(`/api/restaurants/${restaurantId}/clients`)
+  const orders = unwrapList(
+    await adminFetcher<any>(`/api/orders?restaurantId=${restaurantId}`)
+  )
+  return buildClientsFromOrders(orders, restaurantId)
 }
 
-// Restaurant-specific endpoint for dashboard stats
+export async function getRestaurantOrders(restaurantId: string) {
+  const orders = unwrapList(
+    await adminFetcher<any>(`/api/orders?restaurantId=${restaurantId}`)
+  )
+  return filterOrdersForRestaurant(orders, restaurantId)
+}
+
+export async function getRestaurantOrderById(
+  restaurantId: string,
+  orderId: string
+) {
+  const order = await adminFetcher<any>(`/api/orders/${orderId}`)
+
+  if (!order || !orderBelongsToRestaurant(order, restaurantId)) {
+    throw new Error('Pedido não encontrado')
+  }
+
+  return filterOrderItemsForRestaurant(order, restaurantId)
+}
+
+// Restaurant-specific dashboard stats (aggregated from available endpoints)
 export async function getRestaurantDashboardStats(restaurantId: string) {
-  return adminFetcher<any>(`/api/restaurant/${restaurantId}/dashboard`)
+  const [ordersRaw, productsRaw] = await Promise.all([
+    adminFetcher<any>(`/api/orders?restaurantId=${restaurantId}`),
+    adminFetcher<any>(`/api/products?restaurantId=${restaurantId}`),
+  ])
+
+  return buildRestaurantDashboardStats(
+    unwrapList(ordersRaw),
+    unwrapList(productsRaw),
+    restaurantId
+  )
 }
 
-// Restaurant drivers endpoint
+// Restaurant drivers — derived from orders (no admin-only /api/users access)
 export async function getRestaurantDrivers(restaurantId: string) {
-  return adminFetcher<any[]>(`/api/restaurant/${restaurantId}/drivers`)
+  const ordersRaw = await adminFetcher<any>(
+    `/api/orders?restaurantId=${restaurantId}`
+  )
+
+  return buildDriversFromOrders(unwrapList(ordersRaw), restaurantId)
 }

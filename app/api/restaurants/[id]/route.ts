@@ -30,7 +30,7 @@ export async function PATCH(
 
   try {
     const body = await request.json()
-    const { name, address, telephone, email, website, taxId, logo } = body
+    const { name, address, telephone, email, website, taxId, logo, status } = body
 
     if (name !== undefined && !String(name).trim()) {
       return NextResponse.json({ error: 'Nome inválido' }, { status: 400 })
@@ -64,6 +64,7 @@ export async function PATCH(
     if (website !== undefined) updateData.website = website?.trim() || null
     if (taxId !== undefined) updateData.taxId = taxId?.trim() || null
     if (logo !== undefined) updateData.logo = logo?.trim() || null
+    if (status !== undefined) updateData.status = status
 
     const restaurant = await fetcher<any>(`/api/restaurants/${id}`, {
       method: 'PATCH',

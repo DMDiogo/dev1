@@ -18,7 +18,7 @@ export async function requireAuth(allowedRoles: Role[]) {
       redirect(
         session.user.restaurantId
           ? '/restaurant/dashboard'
-          : '/restaurant/setup'
+          : '/setup'
       )
     }
     if (session.user.role === 'ADMIN') {
@@ -36,7 +36,7 @@ export async function requireAdmin() {
 export async function requireRestaurant() {
   const session = await requireAuth(['RESTAURANT'])
   if (!session.user.restaurantId) {
-    redirect('/restaurant/setup')
+    redirect('/setup')
   }
   return session
 }

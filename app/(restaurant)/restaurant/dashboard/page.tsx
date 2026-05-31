@@ -2,11 +2,13 @@ import { requireRestaurant } from '@/lib/session'
 import { getRestaurantDashboardStats } from '@/lib/api/api_server_backend'
 import StatsCard from '@/components/dashboard/StatsCard'
 import RecentOrders from '@/components/dashboard/RecentOrders'
+import RestaurantStandbyBanner from '@/components/restaurant/RestaurantStandbyBanner'
 import { ShoppingBag, Users, Package, TrendingUp } from 'lucide-react'
 
 export default async function RestaurantDashboardPage() {
   const session = await requireRestaurant()
   const restaurantId = session.user.restaurantId!
+  const isStandby = session.user.restaurantStatus === 'STAND_BY'
 
   const stats = await getRestaurantDashboardStats(restaurantId)
 
@@ -49,6 +51,8 @@ export default async function RestaurantDashboardPage() {
           {session.user.restaurantName} — visão geral
         </p>
       </div>
+
+      {isStandby && <RestaurantStandbyBanner />}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         {formattedStats.map((stat) => (

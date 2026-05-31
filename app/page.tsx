@@ -14,7 +14,7 @@ export default async function Home() {
     redirect(
       session.user.restaurantId
         ? '/restaurant/dashboard'
-        : '/restaurant/setup'
+        : '/setup'
     )
   }
 

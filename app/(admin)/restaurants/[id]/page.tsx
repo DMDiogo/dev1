@@ -8,6 +8,7 @@ import { mergeWithDefaults } from '@/lib/working-hours'
 import { ArrowLeft, MapPin, Phone, Mail } from 'lucide-react'
 
 import RestaurantLogo from '@/components/ui/RestaurantLogo'
+import RestaurantStatusBadge from '@/components/restaurants/RestaurantStatusBadge'
 
 export default async function RestaurantDetailPage({
   params,
@@ -36,9 +37,14 @@ export default async function RestaurantDetailPage({
               className="w-14 h-14"
             />
           <div>
-            <h1 className="font-display text-3xl font-bold text-white">
-              {restaurant.name}
-            </h1>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="font-display text-3xl font-bold text-white">
+                {restaurant.name}
+              </h1>
+              {restaurant.status && (
+                <RestaurantStatusBadge status={restaurant.status} />
+              )}
+            </div>
             <p className="text-gray-400 mt-1 flex items-center gap-1">
               <MapPin size={14} />
               {restaurant.address}
@@ -106,6 +112,7 @@ export default async function RestaurantDetailPage({
           email: restaurant.email,
           website: restaurant.website,
           taxId: restaurant.taxId,
+          status: restaurant.status,
         }}
       />
 

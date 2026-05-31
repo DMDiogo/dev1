@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { requireRestaurant } from '@/lib/session'
-import { adminFetcher } from '@/lib/api/api_server_backend'
+import { getRestaurantOrderById } from '@/lib/api/api_server_backend'
 import OrderStatusBadge from '@/components/orders/OrderStatusBadge'
 import OrderStatusSelect from '@/components/orders/OrderStatusSelect'
 import Card from '@/components/ui/Card'
@@ -17,9 +17,12 @@ export default async function RestaurantOrderDetailPage({
   const restaurantId = session.user.restaurantId!
   const { id } = await params
 
-  const order = await adminFetcher<any>(`/api/restaurant/${restaurantId}/orders/${id}`)
-
-  if (!order) notFound()
+  let order
+  try {
+    order = await getRestaurantOrderById(restaurantId, id)
+  } catch {
+    notFound()
+  }
 
   return (
     <div className="space-y-6">

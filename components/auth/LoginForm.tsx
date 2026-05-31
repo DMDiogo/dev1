@@ -26,7 +26,7 @@ function resolveRedirect(
     }
   }
   if (role === 'RESTAURANT') {
-    return needsSetup ? '/restaurant/setup' : '/restaurant/dashboard'
+    return needsSetup ? '/setup' : '/restaurant/dashboard'
   }
   return '/dashboard'
 }
@@ -60,7 +60,9 @@ export default function LoginForm() {
 
       if (result?.error) {
         console.error('SignIn error:', result.error)
-        setError('Email ou palavra-passe incorretos.')
+        setError(
+          'Email ou palavra-passe incorretos. Use o email da conta de utilizador, não o do restaurante.'
+        )
         setLoading(false)
         return
       }

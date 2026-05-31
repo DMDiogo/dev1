@@ -36,7 +36,16 @@ export async function validateUserCredentials(email: string, password: string) {
     return { ok: false as const, reason: 'password' as const }
   }
 
-  const needsSetup = user.role === 'RESTAURANT' && !user.restaurantId
+  const owned =
+    user.ownedRestaurants?.[0] ??
+    user.restaurants?.[0] ??
+    null
+
+  const restaurantId = user.restaurantId ?? owned?.id ?? null
+  const restaurantName = user.restaurantName ?? owned?.name ?? null
+  const restaurantStatus =
+    user.restaurantStatus ?? owned?.status ?? null
+  const needsSetup = user.role === 'RESTAURANT' && !restaurantId
 
   console.log('[VALIDATE] Validation successful! Returning user with id:', user.id);
   
@@ -47,8 +56,9 @@ export async function validateUserCredentials(email: string, password: string) {
       name: user.name,
       email: user.email,
       role: user.role,
-      restaurantId: user.restaurantId,
-      restaurantName: user.restaurantName ?? null,
+      restaurantId,
+      restaurantName,
+      restaurantStatus,
       needsSetup,
     },
   }

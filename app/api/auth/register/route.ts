@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
-import bcrypt from 'bcryptjs'
 import { publicFetcher } from '@/lib/api/api_server_backend'
+
+const BACKEND_API_URL =
+  process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || ''
 
 export async function POST(request: Request) {
   try {
@@ -28,27 +30,38 @@ export async function POST(request: Request) {
       )
     }
 
-    // Hash the password before sending to backend
-    const hashed = await bcrypt.hash(password, 12)
-
     const userData = {
       name: name.trim(),
       email: email.toLowerCase().trim(),
       telephone: telephone.trim(),
-      password: hashed,
+      password,
       role: 'RESTAURANT',
-      restaurantId: null,
     }
 
-    const user = await publicFetcher('/api/auth/register', {
+    const response = await fetch(`${BACKEND_API_URL}/api/auth/register`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(userData),
     })
 
-    return NextResponse.json({ user }, { status: 201 })
-  } catch {
+    const data = await response.json().catch(() => ({}))
+
+    if (!response.ok) {
+      const message =
+        data.error ||
+        data.message ||
+        (response.status === 409
+          ? 'Este email ou telefone já está registado'
+          : 'Erro ao criar conta')
+
+      return NextResponse.json({ error: message }, { status: response.status })
+    }
+
+    return NextResponse.json({ user: data.user ?? data }, { status: 201 })
+  } catch (error) {
+    console.error('[register] Unexpected error:', error)
     return NextResponse.json(
-      { error: 'Erro ao criar conta' },
+      { error: 'Erro ao criar conta. Tente novamente.' },
       { status: 500 }
     )
   }

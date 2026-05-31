@@ -2,10 +2,16 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { geocodeAddress } from '@/lib/geocode'
-import { seedDefaultWorkingHours } from '@/lib/working-hours'
-import { adminFetcher } from '@/lib/api/api_server_backend'
+import { backendAdminFetch } from '@/lib/backend-admin'
+import { resolveRestaurantForUser, storeRestaurantLink } from '@/lib/restaurant-link'
 
 export const runtime = 'nodejs'
+
+type ApiRestaurant = {
+  id: string
+  name: string
+  status?: string
+}
 
 export async function POST(request: Request) {
   try {
@@ -15,17 +21,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    // Check if user already has a restaurant associated
-    const dbUser = await adminFetcher<any>(`/api/users/${session.user.id}`)
+    const existing = await resolveRestaurantForUser({
+      id: session.user.id,
+      email: session.user.email,
+      telephone: session.user.telephone ?? null,
+      name: session.user.name,
+    })
 
-    if (!dbUser) {
-      return NextResponse.json({ error: 'Utilizador não encontrado' }, { status: 404 })
-    }
-
-    if (dbUser.restaurantId) {
+    if (existing) {
       return NextResponse.json(
-        { error: 'Já tem um restaurante associado' },
-        { status: 409 }
+        {
+          restaurant: existing,
+          alreadyExists: true,
+          geocodeMessage: null,
+        },
+        { status: 200 }
       )
     }
 
@@ -46,28 +56,39 @@ export async function POST(request: Request) {
       name: name.trim(),
       address: trimmedAddress,
       telephone: telephone?.trim() || null,
-      email: email?.trim() || null,
+      email: email?.trim() || session.user.email,
       taxId: taxId?.trim() || null,
       latitude: geocoded?.latitude ?? null,
       longitude: geocoded?.longitude ?? null,
+      status: 'STAND_BY',
     }
 
-    const restaurant = await adminFetcher<any>('/api/restaurants', {
+    let restaurant = await backendAdminFetch<ApiRestaurant>('/api/restaurants', {
       method: 'POST',
       body: JSON.stringify(restaurantData),
     })
 
-    // Update user with restaurantId
-    await adminFetcher<any>(`/api/users/${session.user.id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ restaurantId: restaurant.id }),
-    })
+    if (restaurant.status !== 'STAND_BY') {
+      restaurant = await backendAdminFetch<ApiRestaurant>(
+        `/api/restaurants/${restaurant.id}`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'STAND_BY' }),
+        }
+      )
+    }
 
-    await seedDefaultWorkingHours(null, restaurant.id) // Assuming seedDefaultWorkingHours doesn't need DB transaction anymore
+    const linked = {
+      id: restaurant.id,
+      name: restaurant.name,
+      status: restaurant.status ?? 'STAND_BY',
+    }
+
+    await storeRestaurantLink(session.user.id, linked)
 
     return NextResponse.json(
       {
-        restaurant,
+        restaurant: linked,
         geocoded: !!geocoded,
         geocodeMessage: geocoded
           ? `Coordenadas obtidas (${geocoded.source}).`
@@ -77,9 +98,8 @@ export async function POST(request: Request) {
     )
   } catch (error) {
     console.error('[api/restaurant/setup] error:', error)
-    return NextResponse.json(
-      { error: 'Erro ao criar restaurante' },
-      { status: 500 }
-    )
+    const message =
+      error instanceof Error ? error.message : 'Erro ao criar restaurante'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

@@ -36,6 +36,7 @@ export default async function RestaurantsPage() {
             address={r.address}
             telephone={r.telephone}
             logo={r.logo}
+            status={r.status}
             productCount={r._count?.products ?? 0}
             orderItemCount={r._count?.orderItems ?? 0}
           />

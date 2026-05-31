@@ -6,6 +6,7 @@ import Card from '@/components/ui/Card'
 import Input from '@/components/ui/Input'
 import Label from '@/components/ui/Label'
 import Button from '@/components/ui/Button'
+import RestaurantStatusBadge from '@/components/restaurants/RestaurantStatusBadge'
 
 type RestaurantData = {
   id: string
@@ -15,6 +16,7 @@ type RestaurantData = {
   email: string | null
   website: string | null
   taxId: string | null
+  status?: string | null
 }
 
 export default function EditRestaurantForm({
@@ -41,6 +43,7 @@ export default function EditRestaurantForm({
       email: String(form.get('email') || '').trim() || null,
       website: String(form.get('website') || '').trim() || null,
       taxId: String(form.get('taxId') || '').trim() || null,
+      status: String(form.get('status') || '').trim() || undefined,
     }
 
     try {
@@ -70,6 +73,13 @@ export default function EditRestaurantForm({
   return (
     <Card title="Editar restaurante">
       <form onSubmit={handleSubmit} className="space-y-4">
+        {restaurant.status && (
+          <div className="flex items-center justify-between gap-3 pb-2">
+            <p className="text-sm text-gray-400">Estado actual</p>
+            <RestaurantStatusBadge status={restaurant.status} />
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="edit-name">Nome *</Label>
@@ -121,6 +131,22 @@ export default function EditRestaurantForm({
               name="taxId"
               defaultValue={restaurant.taxId ?? ''}
             />
+          </div>
+          <div>
+            <Label htmlFor="edit-status">Estado</Label>
+            <select
+              id="edit-status"
+              name="status"
+              defaultValue={restaurant.status ?? 'STAND_BY'}
+              className="w-full rounded-xl bg-surface-muted border border-surface-border px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+            >
+              <option value="STAND_BY">Em análise</option>
+              <option value="ACTIVE">Activo</option>
+              <option value="INACTIVE">Inactivo</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Active o restaurante após validar os dados do estabelecimento.
+            </p>
           </div>
         </div>
 

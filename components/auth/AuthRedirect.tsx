@@ -15,7 +15,7 @@ export default function AuthRedirect() {
     if (role === 'RESTAURANT') {
       destination = restaurantId
         ? '/restaurant/dashboard'
-        : '/restaurant/setup'
+        : '/setup'
     }
 
     window.location.replace(destination)

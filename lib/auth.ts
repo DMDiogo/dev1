@@ -1,15 +1,13 @@
 // lib/auth.ts
 import type { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { validateUserCredentials } from '@/lib/validate-user'
+import { authenticateWithBackend, enrichRestaurantSession } from '@/lib/authenticate'
 import type { Role } from '@/types/next-auth'
-
-const BACKEND_API_URL = process.env.BACKEND_API_URL || 'https://aodelivery-api.angolaerp.co.ao'
 
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
-  session: { 
-    strategy: 'jwt', 
+  session: {
+    strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60,
     updateAge: 24 * 60 * 60,
   },
@@ -24,142 +22,95 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      
+
       async authorize(credentials) {
-        try {
-          if (!credentials?.email || !credentials?.password) {
-            console.log('[NextAuth] Missing credentials');
-            return null;
-          }
+        if (!credentials?.email || !credentials?.password) {
+          return null
+        }
 
-          console.log('[NextAuth] Validating credentials for:', credentials.email);
-          
-          // First, validate credentials locally (this works)
-          const result = await validateUserCredentials(
-            credentials.email,
-            credentials.password
-          );
+        const result = await authenticateWithBackend(
+          credentials.email,
+          credentials.password
+        )
 
-          if (!result.ok) {
-            console.log('[NextAuth] Validation failed:', result.reason);
-            return null;
-          }
+        if (!result.ok) {
+          console.log('[NextAuth] Login failed:', result.reason)
+          return null
+        }
 
-          console.log('[NextAuth] Local validation successful for:', result.user.email);
-          
-          // Now try to get token from backend
-          const backendUrl = `${BACKEND_API_URL}/api/auth/login`;
-          console.log('[NextAuth] Attempting to fetch token from:', backendUrl);
-          
-          try {
-            const loginResponse = await fetch(backendUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                email: credentials.email,
-                password: credentials.password,
-              }),
-            });
-
-            console.log('[NextAuth] Backend response status:', loginResponse.status);
-            console.log('[NextAuth] Backend response headers:', {
-              contentType: loginResponse.headers.get('content-type'),
-              status: loginResponse.status
-            });
-
-            if (!loginResponse.ok) {
-              const errorText = await loginResponse.text();
-              console.error('[NextAuth] Backend error response:', errorText);
-              return null;
-            }
-
-            const loginData = await loginResponse.json();
-            console.log('[NextAuth] Backend response data keys:', Object.keys(loginData));
-            console.log('[NextAuth] Full backend response:', JSON.stringify(loginData, null, 2));
-            
-            //const backendToken = loginData.loginToken || loginData.token;
-            const backendToken = loginData.access_token || loginData.loginToken || loginData.token;
-
-            console.log('token ', loginData.access_token);
-            console.log('logintoken ', loginData.loginToken);
-            console.log('logindata ', loginData.token);
-            
-            if (!backendToken) {
-              console.error('[NextAuth] No token found in response. Available fields:', Object.keys(loginData));
-              return null;
-            }
-
-            console.log('[NextAuth] Successfully got token from backend');
-            
-            return {
-              id: result.user.id,
-              name: result.user.name,
-              email: result.user.email,
-              role: result.user.role,
-              restaurantId: result.user.restaurantId,
-              restaurantName: result.user.restaurantName ?? null,
-              accessToken: backendToken,
-            };
-            
-          } catch (fetchError: unknown) {
-            // Properly handle unknown error type
-            console.error('[NextAuth] Fetch error occurred');
-            
-            if (fetchError instanceof Error) {
-              console.error('[NextAuth] Error message:', fetchError.message);
-              console.error('[NextAuth] Error name:', fetchError.name);
-              console.error('[NextAuth] Error stack:', fetchError.stack);
-              
-              // Check for specific error types
-              if (fetchError.name === 'TypeError' && fetchError.message.includes('fetch')) {
-                console.error('[NextAuth] Network error - unable to reach backend API');
-                console.error('[NextAuth] Make sure the backend URL is correct and accessible');
-              }
-            } else {
-              console.error('[NextAuth] Unknown error type:', fetchError);
-            }
-            
-            // Return null to indicate authentication failure
-            return null;
-          }
-          
-        } catch (error: unknown) {
-          console.error('[NextAuth] Authorize error occurred');
-          if (error instanceof Error) {
-            console.error('[NextAuth] Error message:', error.message);
-            console.error('[NextAuth] Error stack:', error.stack);
-          } else {
-            console.error('[NextAuth] Unknown error:', error);
-          }
-          return null;
+        return {
+          id: result.user.id,
+          name: result.user.name,
+          email: result.user.email,
+          role: result.user.role,
+          restaurantId: result.user.restaurantId,
+          restaurantName: result.user.restaurantName,
+          restaurantStatus: result.user.restaurantStatus,
+          needsSetup: result.user.needsSetup,
+          accessToken: result.accessToken,
         }
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
-        token.id = user.id;
-        token.role = user.role;
-        token.restaurantId = user.restaurantId;
-        token.restaurantName = user.restaurantName;
-        token.accessToken = user.accessToken;
-        console.log('[JWT Callback] Token saved with accessToken:', !!token.accessToken);
+        token.id = user.id
+        token.role = user.role
+        token.restaurantId = user.restaurantId
+        token.restaurantName = user.restaurantName
+        token.restaurantStatus = user.restaurantStatus
+        token.needsSetup = user.needsSetup
+        token.accessToken = user.accessToken
       }
-      return token;
+
+      if (trigger === 'update' && session) {
+        if ('restaurantId' in session) {
+          token.restaurantId = session.restaurantId as string | null
+        }
+        if ('restaurantName' in session) {
+          token.restaurantName = session.restaurantName as string | null
+        }
+        if ('restaurantStatus' in session) {
+          token.restaurantStatus = session.restaurantStatus as string | null
+        }
+        if ('needsSetup' in session) {
+          token.needsSetup = session.needsSetup as boolean
+        }
+      }
+
+      if (token.role === 'RESTAURANT' && !token.restaurantId && token.id && token.email) {
+        const enriched = await enrichRestaurantSession({
+          id: token.id as string,
+          email: token.email as string,
+          role: token.role as string,
+          restaurantId: token.restaurantId as string | null,
+          restaurantName: token.restaurantName as string | null,
+          restaurantStatus: token.restaurantStatus as string | null,
+          needsSetup: token.needsSetup as boolean,
+        })
+
+        if (enriched.restaurantId) {
+          token.restaurantId = enriched.restaurantId
+          token.restaurantName = enriched.restaurantName ?? null
+          token.restaurantStatus = enriched.restaurantStatus ?? null
+          token.needsSetup = false
+        }
+      }
+
+      return token
     },
     async session({ session, token }) {
       if (session.user && token) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as Role;
-        session.user.restaurantId = token.restaurantId as string;
-        session.user.restaurantName = token.restaurantName as string;
-        session.user.accessToken = token.accessToken as string;
-        console.log('[Session Callback] Session has accessToken:', !!session.user.accessToken);
+        session.user.id = token.id as string
+        session.user.role = token.role as Role
+        session.user.restaurantId = token.restaurantId as string
+        session.user.restaurantName = token.restaurantName as string
+        session.user.restaurantStatus = token.restaurantStatus as string
+        session.user.needsSetup = token.needsSetup as boolean
+        session.user.accessToken = token.accessToken as string
       }
-      return session;
+      return session
     },
   },
   debug: process.env.NODE_ENV === 'development',

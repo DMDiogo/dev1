@@ -72,6 +72,9 @@ export default function RegisterForm() {
           required
           placeholder="nome@restaurante.ao"
         />
+        <p className="text-xs text-gray-500 mt-1.5">
+          Este email será o seu utilizador para iniciar sessão.
+        </p>
       </div>
 
       <div>
