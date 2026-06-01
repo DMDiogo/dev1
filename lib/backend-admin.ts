@@ -1,15 +1,29 @@
-const BACKEND_API_URL =
-  process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || ''
+const BACKEND_API_URL = process.env.BACKEND_API_URL || ''
 
 let cachedToken: { value: string; expiresAt: number } | null = null
 
 async function getBackendAdminToken(): Promise<string> {
-  const email = process.env.BACKEND_ADMIN_EMAIL
-  const password = process.env.BACKEND_ADMIN_PASSWORD
+  if (!BACKEND_API_URL) {
+    throw new Error('BACKEND_API_URL em falta no servidor')
+  }
+
+  // Optional: allow a pre-generated token (useful for production secrets rotation)
+  const directToken = process.env.BACKEND_ADMIN_TOKEN
+  if (directToken) return directToken
+
+  let email = process.env.BACKEND_ADMIN_EMAIL
+  let password = process.env.BACKEND_ADMIN_PASSWORD
+
+  // Dev convenience: allow setup flow without configuring env vars locally.
+  // These values are server-side only (never exposed to the browser unless you use NEXT_PUBLIC_*)
+  if ((!email || !password) && process.env.NODE_ENV !== 'production') {
+    email = 'admin@foodadmin.ao'
+    password = 'admin123'
+  }
 
   if (!email || !password) {
     throw new Error(
-      'Credenciais de serviço em falta (BACKEND_ADMIN_EMAIL / BACKEND_ADMIN_PASSWORD)'
+      'Credenciais de serviço em falta (BACKEND_ADMIN_EMAIL / BACKEND_ADMIN_PASSWORD ou BACKEND_ADMIN_TOKEN)'
     )
   }
 
