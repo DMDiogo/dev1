@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import Badge from '@/components/ui/Badge'
 import EmptyState from '@/components/ui/EmptyState'
 import StatsCard from '@/components/dashboard/StatsCard'
@@ -12,6 +13,12 @@ import {
 import { formatDate } from '@/lib/utils'
 import { Truck, Package, CheckCircle2 } from 'lucide-react'
 import { getDrivers } from '@/lib/api/api_server_backend'
+import {
+  driverHasActiveDelivery,
+  driverIsInTransit,
+  driverStatusLabel,
+  driverStatusVariant,
+} from '@/lib/driver-status'
 import type { OrderStatus } from '@/types/next-auth'
 
 const ACTIVE_STATUSES: OrderStatus[] = [
@@ -23,9 +30,22 @@ const ACTIVE_STATUSES: OrderStatus[] = [
 ]
 
 export default async function DriversPage() {
-  const drivers = await getDrivers()
+  let drivers: Awaited<ReturnType<typeof getDrivers>> = []
+  let loadError: string | null = null
 
-  const busyCount = drivers.filter((d) => d.driverOrders?.some((o: any) => ACTIVE_STATUSES.includes(o.status as OrderStatus))).length
+  try {
+    drivers = await getDrivers()
+  } catch (error) {
+    loadError =
+      error instanceof Error
+        ? error.message
+        : 'Não foi possível carregar os motoristas.'
+    console.error('[DriversPage]', error)
+  }
+
+  const busyCount = drivers.filter((d) =>
+    driverHasActiveDelivery(d.driverOrders)
+  ).length
 
   return (
     <div className="space-y-6">
@@ -37,6 +57,12 @@ export default async function DriversPage() {
           Gestão de entregadores da plataforma
         </p>
       </div>
+
+      {loadError && (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          {loadError}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatsCard
@@ -78,26 +104,49 @@ export default async function DriversPage() {
               <TableHeader>Entregas</TableHeader>
               <TableHeader>Estado</TableHeader>
               <TableHeader>Registo</TableHeader>
+              <TableHeader className="text-right">Ficha</TableHeader>
             </TableRow>
           </TableHead>
           <TableBody>
             {drivers.map((driver) => {
-              const isBusy = driver.driverOrders?.some((o: any) => ACTIVE_STATUSES.includes(o.status as OrderStatus)) ?? false
+              const inTransit = driverIsInTransit(driver.driverOrders)
+              const accountStatus = driver.status ?? 'ACTIVE'
               return (
                 <TableRow key={driver.id}>
                   <TableCell className="font-medium text-white">
-                    {driver.name}
+                    <Link
+                      href={`/drivers/${driver.id}`}
+                      className="hover:text-brand-400 transition-colors"
+                    >
+                      {driver.name}
+                    </Link>
                   </TableCell>
                   <TableCell>{driver.email}</TableCell>
                   <TableCell>{driver.telephone}</TableCell>
-                  <TableCell>{driver._count?.driverOrders ?? 0}</TableCell>
                   <TableCell>
-                    <Badge variant={isBusy ? 'warning' : 'success'}>
-                      {isBusy ? 'Em entrega' : 'Disponível'}
-                    </Badge>
+                    {driver._count?.driverOrders ??
+                      driver.driverOrders?.length ??
+                      0}
+                  </TableCell>
+                  <TableCell>
+                    {inTransit ? (
+                      <Badge variant="warning">Em entrega</Badge>
+                    ) : (
+                      <Badge variant={driverStatusVariant(accountStatus)}>
+                        {driverStatusLabel(accountStatus)}
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell className="text-gray-500 text-xs">
                     {formatDate(driver.createdAt)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Link
+                      href={`/drivers/${driver.id}`}
+                      className="text-sm text-brand-400 hover:text-brand-300"
+                    >
+                      Ver ficha
+                    </Link>
                   </TableCell>
                 </TableRow>
               )

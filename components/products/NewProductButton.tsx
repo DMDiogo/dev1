@@ -7,6 +7,8 @@ import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
 import Label from '@/components/ui/Label'
+import CategoryField from '@/components/products/CategoryField'
+import { normalizeCategory } from '@/lib/product-categories'
 
 type RestaurantOption = { id: string; name: string }
 
@@ -26,11 +28,19 @@ export default function NewProductButton({
     setLoading(true)
 
     const form = new FormData(e.currentTarget)
+    const category = normalizeCategory(String(form.get('category') || ''))
+    if (!category) {
+      setError('Indique a categoria do produto.')
+      setLoading(false)
+      return
+    }
+
     const payload = {
       name: String(form.get('name')).trim(),
       price: parseFloat(String(form.get('price'))),
       restaurantId: String(form.get('restaurantId')),
       taxPercentage: String(form.get('taxPercentage')),
+      category,
     }
 
     try {
@@ -106,6 +116,7 @@ export default function NewProductButton({
                 placeholder="2500"
               />
             </div>
+            <CategoryField />
             <div>
               <Label htmlFor="taxPercentage">IVA</Label>
               <Select id="taxPercentage" name="taxPercentage" defaultValue="VAT_14">

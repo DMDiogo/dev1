@@ -1,5 +1,6 @@
 import {
   buildClientsFromOrders,
+  buildDriversFromAllOrders,
   buildDriversFromOrders,
   buildRestaurantDashboardStats,
   filterOrderItemsForRestaurant,
@@ -14,7 +15,15 @@ import jwt, { JwtPayload } from 'jsonwebtoken'
 
 import { NextResponse } from 'next/server'
 
-const API_BASE_URL = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+export function getApiBaseUrl() {
+  return (
+    process.env.BACKEND_API_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    'http://localhost:3001'
+  ).replace(/\/$/, '')
+}
+
+const API_BASE_URL = getApiBaseUrl()
 
 
 // app/api/test-backend/route.ts
@@ -213,22 +222,30 @@ export async function adminFetcher<T>(
     console.log('[adminFetcher] Could not determine token expiration')
   }
 
-  const baseUrl = process.env.BACKEND_API_URL || 'http://localhost:3001'
-
-  // Don't add /api prefix if it's already in the endpoint
+  const baseUrl = getApiBaseUrl()
   const url = `${baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`
-  
-  console.log('[adminFetcher] Requesting:', url)  
-  
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.user.accessToken}`,
-      ...options?.headers,
-    },
-    credentials: 'include',
-  })
+
+  console.log('[adminFetcher] Requesting:', url)
+
+  let response: Response
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.user.accessToken}`,
+        ...options?.headers,
+      },
+      cache: 'no-store',
+    })
+  } catch (networkError) {
+    const detail =
+      networkError instanceof Error ? networkError.message : 'fetch failed'
+    console.error('[adminFetcher] Network error:', url, networkError)
+    throw new Error(
+      `Não foi possível contactar a API (${baseUrl}). Verifique BACKEND_API_URL, VPN/internet e se o servidor está online. (${detail})`
+    )
+  }
 
   // Handle 401 Unauthorized - token might be expired
   if (response.status === 401) {
@@ -252,17 +269,27 @@ export async function publicFetcher<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> {
-  const baseUrl = process.env.BACKEND_API_URL || 'http://localhost:3001'
-  
+  const baseUrl = getApiBaseUrl()
+
   console.log('[publicFetcher] Making request to:', `${baseUrl}${endpoint}`)
-  
-  const response = await fetch(`${baseUrl}${endpoint}`, {
+
+  let response: Response
+  try {
+    response = await fetch(`${baseUrl}${endpoint}`, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  })
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+      cache: 'no-store',
+    })
+  } catch (networkError) {
+    const detail =
+      networkError instanceof Error ? networkError.message : 'fetch failed'
+    throw new Error(
+      `Não foi possível contactar a API (${baseUrl}). (${detail})`
+    )
+  }
 
   if (!response.ok) {
     const error = await response.text()
@@ -392,9 +419,99 @@ export async function getOrderById(id: string) {
   return adminFetcher<any>(`/api/orders/${id}`)
 }
 
+type StaffUser = {
+  id: string
+  name: string
+  email: string
+  telephone?: string | null
+  role: string
+  status?: string
+  createdAt: string
+}
+
+type DriverUser = StaffUser & {
+  role: 'DRIVER'
+  status?: string
+  driverOrders?: { status?: string }[]
+  _count?: { driverOrders?: number }
+}
+
+// User API functions
+export async function getStaffUsers(): Promise<StaffUser[]> {
+  const [adminsRaw, restaurantsRaw] = await Promise.all([
+    adminFetcher<any>(`/api/users?role=ADMIN`),
+    adminFetcher<any>(`/api/users?role=RESTAURANT`),
+  ])
+
+  const users: StaffUser[] = [
+    ...unwrapList<StaffUser>(adminsRaw),
+    ...unwrapList<StaffUser>(restaurantsRaw),
+  ]
+
+  return users.sort(
+    (a, b) =>
+      new Date(b.createdAt ?? 0).getTime() -
+      new Date(a.createdAt ?? 0).getTime()
+  )
+}
+
+export async function getUserById(id: string) {
+  return adminFetcher<any>(`/api/users/${id}`)
+}
+
+export async function updateUserStatus(id: string, status: string) {
+  return adminFetcher<any>(`/api/users/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  })
+}
+
+async function getDriversFromOrders(): Promise<DriverUser[]> {
+  const ordersRaw = await adminFetcher<any>(`/api/orders`)
+  return buildDriversFromAllOrders(
+    unwrapList(ordersRaw)
+  ) as DriverUser[]
+}
+
 // Driver API functions
-export async function getDrivers() {
-  return adminFetcher<any[]>(`/api/users?role=DRIVER`)
+export async function getDrivers(): Promise<DriverUser[]> {
+  let lastError: unknown = null
+
+  try {
+    const raw = await adminFetcher<any>(`/api/users?role=DRIVER`)
+    const fromUsers = unwrapList<DriverUser>(raw)
+    if (fromUsers.length > 0) return fromUsers
+  } catch (error) {
+    lastError = error
+    console.warn(
+      '[getDrivers] /api/users?role=DRIVER failed, trying orders:',
+      error
+    )
+  }
+
+  try {
+    const fromOrders = await getDriversFromOrders()
+    if (fromOrders.length > 0) return fromOrders
+  } catch (error) {
+    lastError = error
+    console.error('[getDrivers] orders fallback failed:', error)
+  }
+
+  if (lastError instanceof Error) throw lastError
+  if (lastError) throw new Error(String(lastError))
+  return []
+}
+
+export async function getDriverById(id: string): Promise<DriverUser | null> {
+  try {
+    const user = await getUserById(id)
+    if (user?.role === 'DRIVER') return user as DriverUser
+  } catch (error) {
+    console.warn('[getDriverById] user API failed:', error)
+  }
+
+  const drivers = await getDrivers()
+  return drivers.find((driver) => driver.id === id) ?? null
 }
 
 // Client API functions

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { adminFetcher } from '@/lib/api/api_server_backend'
+import { unwrapList } from '@/lib/restaurant-data'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
@@ -25,14 +26,16 @@ export async function GET(request: Request) {
 
     // adminFetcher expects only 2 arguments: endpoint and options
     // It will automatically use the JWT token from the session
-    const users = await adminFetcher<any[]>(endpoint, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${session.user.accessToken}`,
-        'Content-Type': 'application/json',
-      }
-    })
-    
+    const users = unwrapList(
+      await adminFetcher<any[]>(endpoint, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${session.user.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      })
+    )
+
     return NextResponse.json(users)
   } catch (error) {
     console.error('[api/users] error:', error)

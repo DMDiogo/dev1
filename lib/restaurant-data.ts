@@ -122,8 +122,71 @@ export function buildClientsFromOrders(
 
 type OrderWithDriver = {
   driverId?: string
-  driver?: { name?: string; email?: string; telephone?: string }
+  driver?: {
+    id?: string
+    name?: string
+    email?: string
+    telephone?: string
+    status?: string
+    createdAt?: string
+  }
+  status?: string
   items?: { restaurantId?: string }[]
+}
+
+export type DriverFromOrders = {
+  id: string
+  name: string
+  email: string
+  telephone: string
+  status?: string
+  createdAt?: string
+  role: 'DRIVER'
+  driverOrders: OrderWithDriver[]
+  _count?: { driverOrders: number }
+}
+
+function upsertDriverFromOrder(
+  byDriver: Map<string, DriverFromOrders>,
+  order: OrderWithDriver
+) {
+  if (!order.driverId) return
+
+  const profile = order.driver
+  const existing = byDriver.get(order.driverId)
+
+  if (existing) {
+    existing.driverOrders.push(order)
+    return
+  }
+
+  byDriver.set(order.driverId, {
+    id: order.driverId,
+    name: profile?.name ?? 'Motorista',
+    email: profile?.email ?? '',
+    telephone: profile?.telephone ?? '',
+    status: profile?.status,
+    createdAt: profile?.createdAt,
+    role: 'DRIVER',
+    driverOrders: [order],
+    _count: { driverOrders: 0 },
+  })
+}
+
+/** Motoristas únicos a partir de todos os pedidos (fallback quando /api/users falha). */
+export function buildDriversFromAllOrders(
+  orders: OrderWithDriver[]
+): DriverFromOrders[] {
+  const byDriver = new Map<string, DriverFromOrders>()
+
+  for (const order of orders) {
+    upsertDriverFromOrder(byDriver, order)
+  }
+
+  return Array.from(byDriver.values()).map((driver) => ({
+    ...driver,
+    _count: { driverOrders: driver.driverOrders.length },
+  }))
 }
 
 export function buildDriversFromOrders(
@@ -131,34 +194,15 @@ export function buildDriversFromOrders(
   restaurantId: string
 ) {
   const restaurantOrders = filterOrdersForRestaurant(orders, restaurantId)
-  const byDriver = new Map<
-    string,
-    {
-      id: string
-      name: string
-      email: string
-      telephone: string
-      driverOrders: OrderWithDriver[]
-    }
-  >()
+  const byDriver = new Map<string, DriverFromOrders>()
 
   for (const order of restaurantOrders) {
     if (!order.driverId || !order.driver) continue
-
-    const existing = byDriver.get(order.driverId)
-    if (existing) {
-      existing.driverOrders.push(order)
-      continue
-    }
-
-    byDriver.set(order.driverId, {
-      id: order.driverId,
-      name: order.driver.name ?? '',
-      email: order.driver.email ?? '',
-      telephone: order.driver.telephone ?? '',
-      driverOrders: [order],
-    })
+    upsertDriverFromOrder(byDriver, order)
   }
 
-  return Array.from(byDriver.values())
+  return Array.from(byDriver.values()).map((driver) => ({
+    ...driver,
+    _count: { driverOrders: driver.driverOrders.length },
+  }))
 }

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { adminFetcher } from '@/lib/api/api_server_backend'
+import { normalizeCategory } from '@/lib/product-categories'
+import { unwrapList } from '@/lib/restaurant-data'
 
 export async function GET(request: Request) {
   try {
@@ -13,7 +15,7 @@ export async function GET(request: Request) {
       endpoint += `?restaurantId=${restaurantId}`
     }
 
-    const products = await adminFetcher<any[]>(endpoint)
+    const products = unwrapList(await adminFetcher<any[]>(endpoint))
     return NextResponse.json(products)
   } catch (error) {
     console.error('[api/products GET] error:', error)
@@ -29,7 +31,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    let { name, price, restaurantId, taxPercentage } = body
+    let { name, price, restaurantId, taxPercentage, category } = body
 
     if (session.user.role === 'RESTAURANT') {
       if (!session.user.restaurantId) {
@@ -55,11 +57,20 @@ export async function POST(request: Request) {
     // Since we're moving away from Prisma, we'll assume the backend handles tax validation
     const tax = taxPercentage || 'VAT_14' // Default value
 
+    const normalizedCategory = normalizeCategory(String(category || ''))
+    if (!normalizedCategory) {
+      return NextResponse.json(
+        { error: 'Categoria é obrigatória' },
+        { status: 400 }
+      )
+    }
+
     const productData = {
       name: name.trim(),
       price,
       restaurantId,
       taxPercentage: tax,
+      category: normalizedCategory,
     }
 
     const product = await adminFetcher<any>('/api/products', {

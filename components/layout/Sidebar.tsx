@@ -8,6 +8,7 @@ import {
   UtensilsCrossed,
   Package,
   Users,
+  UserCog,
   Truck,
   ChevronRight,
 } from 'lucide-react'
@@ -19,6 +20,7 @@ const links = [
   { href: '/restaurants', label: 'Restaurantes', icon: UtensilsCrossed },
   { href: '/products', label: 'Produtos', icon: Package },
   { href: '/users', label: 'Clientes', icon: Users },
+  { href: '/staff', label: 'Utilizadores', icon: UserCog },
   { href: '/drivers', label: 'Motoristas', icon: Truck },
 ]
 
