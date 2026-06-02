@@ -18,13 +18,17 @@ export async function POST(request: Request) {
     const session = await getServerSession(authOptions)
 
     if (!session?.user || session.user.role !== 'RESTAURANT') {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+      return NextResponse.json({ error: 'NÃ£o autorizado' }, { status: 401 })
     }
+
+    //FIX; Moved
+    const body = await request.json()
+    const { name, address, telephone, email, taxId } = body
 
     const existing = await resolveRestaurantForUser({
       id: session.user.id,
       email: session.user.email,
-      telephone: session.user.telephone ?? null,
+      telephone: telephone ?? null, // session.user.telephone ?? null,
       name: session.user.name,
     })
 
@@ -39,12 +43,12 @@ export async function POST(request: Request) {
       )
     }
 
-    const body = await request.json()
-    const { name, address, telephone, email, taxId } = body
+    //const body = await request.json()
+    //const { name, address, telephone, email, taxId } = body
 
     if (!name?.trim() || !address?.trim()) {
       return NextResponse.json(
-        { error: 'Nome e morada são obrigatórios' },
+        { error: 'Nome e morada sÃ£o obrigatÃ³rios' },
         { status: 400 }
       )
     }
@@ -92,7 +96,7 @@ export async function POST(request: Request) {
         geocoded: !!geocoded,
         geocodeMessage: geocoded
           ? `Coordenadas obtidas (${geocoded.source}).`
-          : 'Restaurante criado. Não foi possível obter GPS — inclua bairro e cidade (ex: Talatona, Luanda, Angola).',
+          : 'Restaurante criado. NÃ£o foi possÃ­vel obter GPS â€” inclua bairro e cidade (ex: Talatona, Luanda, Angola).',
       },
       { status: 201 }
     )

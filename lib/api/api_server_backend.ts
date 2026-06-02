@@ -402,14 +402,14 @@ export async function getClients(restaurantId: string) {
   const orders = unwrapList(
     await adminFetcher<any>(`/api/orders?restaurantId=${restaurantId}`)
   )
-  return buildClientsFromOrders(orders, restaurantId)
+  return buildClientsFromOrders(orders as any, restaurantId)
 }
 
 export async function getRestaurantOrders(restaurantId: string) {
   const orders = unwrapList(
     await adminFetcher<any>(`/api/orders?restaurantId=${restaurantId}`)
   )
-  return filterOrdersForRestaurant(orders, restaurantId)
+  return filterOrdersForRestaurant(orders as any, restaurantId)
 }
 
 export async function getRestaurantOrderById(
@@ -419,7 +419,7 @@ export async function getRestaurantOrderById(
   const order = await adminFetcher<any>(`/api/orders/${orderId}`)
 
   if (!order || !orderBelongsToRestaurant(order, restaurantId)) {
-    throw new Error('Pedido não encontrado')
+    throw new Error('Pedido nÃ£o encontrado')
   }
 
   return filterOrderItemsForRestaurant(order, restaurantId)
@@ -439,7 +439,7 @@ export async function getRestaurantDashboardStats(restaurantId: string) {
   )
 }
 
-// Restaurant drivers — derived from orders (no admin-only /api/users access)
+// Restaurant drivers â€” derived from orders (no admin-only /api/users access)
 export async function getRestaurantDrivers(restaurantId: string) {
   const ordersRaw = await adminFetcher<any>(
     `/api/orders?restaurantId=${restaurantId}`

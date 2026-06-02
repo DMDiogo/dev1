@@ -48,7 +48,10 @@ export default async function RestaurantProductsPage() {
               </TableCell>
               <TableCell>{formatCurrency(product.price)}</TableCell>
               <TableCell className="text-gray-500 text-xs">
-                {product.taxPercentage?.replace('VAT_', '')}%
+                  {typeof product.taxPercentage === 'string' 
+                    ? product.taxPercentage.replace('VAT_', '') 
+                    : product.taxPercentage}%
+
               </TableCell>
             </TableRow>
           ))}

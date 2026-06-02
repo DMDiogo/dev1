@@ -5,12 +5,38 @@ import RecentOrders from '@/components/dashboard/RecentOrders'
 import RestaurantStandbyBanner from '@/components/restaurant/RestaurantStandbyBanner'
 import { ShoppingBag, Users, Package, TrendingUp } from 'lucide-react'
 
+// Define the expected shape for RecentOrders component
+interface RecentOrder {
+  id: string
+  orderCounter: number
+  total: number
+  status: string
+  createdAt: Date
+  user: {
+    name: string
+    email: string
+  }
+}
+
 export default async function RestaurantDashboardPage() {
   const session = await requireRestaurant()
   const restaurantId = session.user.restaurantId!
   const isStandby = session.user.restaurantStatus === 'STAND_BY'
 
   const stats = await getRestaurantDashboardStats(restaurantId)
+
+  // Transform recentOrders to match the expected format
+  const transformedRecentOrders: RecentOrder[] = (stats.recentOrders ?? []).map((order: any) => ({
+    id: order.id || order._id || `order-${Date.now()}-${Math.random()}`,
+    orderCounter: order.orderCounter || order.orderNumber || 0,
+    total: order.total || order.subtotal || 0,
+    status: order.status || 'pending',
+    createdAt: new Date(order.createdAt || order.created_at || new Date()),
+    user: {
+      name: order.user?.name || order.userName || 'Guest User',
+      email: order.user?.email || order.userEmail || 'no-email@example.com'
+    }
+  }))
 
   const formattedStats = [
     {
@@ -61,7 +87,7 @@ export default async function RestaurantDashboardPage() {
       </div>
 
       <RecentOrders
-        orders={stats.recentOrders ?? []}
+        orders={transformedRecentOrders}
         orderLinkPrefix="/restaurant/orders"
         ordersListHref="/restaurant/orders"
       />
