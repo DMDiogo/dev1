@@ -27,6 +27,7 @@ declare module 'next-auth' {
       restaurantId: string | null;
       restaurantName: string | null;
       restaurantStatus: string | null;
+      restaurantLogo: string | null;
       accessToken: string;
       needsSetup?: boolean;
     } & DefaultSession["user"];
@@ -41,6 +42,7 @@ declare module 'next-auth' {
     restaurantId?: string | null;
     restaurantName?: string | null;
     restaurantStatus?: string | null;
+    restaurantLogo?: string | null;
     needsSetup?: boolean;
   }
 }
@@ -53,6 +55,7 @@ declare module 'next-auth/jwt' {
     restaurantId?: string | null;
     restaurantName?: string | null;
     restaurantStatus?: string | null;
+    restaurantLogo?: string | null;
     needsSetup?: boolean;
   }
 }

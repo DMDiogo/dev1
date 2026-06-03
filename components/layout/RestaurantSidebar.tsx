@@ -9,6 +9,8 @@ import {
   Users,
   Truck,
   Store,
+  User,
+  Clock,
   ChevronRight,
 } from 'lucide-react'
 import Logo from '@/components/auth/Logo'
@@ -19,7 +21,8 @@ const links = [
   { href: '/restaurant/products', label: 'Produtos', icon: Package },
   { href: '/restaurant/clients', label: 'Clientes', icon: Users },
   { href: '/restaurant/drivers', label: 'Motoristas', icon: Truck },
-  { href: '/restaurant/settings', label: 'Restaurante', icon: Store },
+  { href: '/restaurant/profile', label: 'Perfil', icon: User },
+  { href: '/restaurant/settings', label: 'Horário', icon: Clock },
 ]
 
 export default function RestaurantSidebar({

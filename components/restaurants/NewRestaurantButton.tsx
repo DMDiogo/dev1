@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
 import Label from '@/components/ui/Label'
+import RestaurantLogoUpload from '@/components/restaurants/RestaurantLogoUpload'
 
 const emptyForm = {
   name: '',
@@ -23,6 +24,10 @@ export default function NewRestaurantButton() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [createdRestaurantId, setCreatedRestaurantId] = useState<string | null>(
+    null
+  )
+  const [createdRestaurantName, setCreatedRestaurantName] = useState('')
 
   function handleOpenChange(nextOpen: boolean) {
     setOpen(nextOpen)
@@ -67,20 +72,27 @@ export default function NewRestaurantButton() {
         throw new Error(data.error ?? 'Erro ao criar restaurante')
       }
 
+      const newId = data.id ?? data.restaurant?.id
+      setCreatedRestaurantId(newId ?? null)
+      setCreatedRestaurantName(payload.name)
       setSuccess(
         data.geocodeMessage ??
           (data.geocoded
             ? 'Restaurante criado com coordenadas GPS.'
-            : 'Restaurante criado.')
+            : 'Restaurante criado. Pode adicionar o logo abaixo.')
       )
       setLoading(false)
       router.refresh()
 
-      setTimeout(() => {
-        setFormKey((k) => k + 1)
-        setOpen(false)
-        setSuccess(null)
-      }, 2800)
+      if (!newId) {
+        setTimeout(() => {
+          setFormKey((k) => k + 1)
+          setOpen(false)
+          setSuccess(null)
+          setCreatedRestaurantId(null)
+          setCreatedRestaurantName('')
+        }, 2800)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao criar restaurante')
       setLoading(false)
@@ -157,6 +169,32 @@ export default function NewRestaurantButton() {
             />
           </div>
 
+          {createdRestaurantId && (
+            <div className="pt-2 border-t border-surface-border">
+              <p className="text-sm text-gray-400 mb-3">Logo (opcional)</p>
+              <RestaurantLogoUpload
+                restaurantId={createdRestaurantId}
+                restaurantName={createdRestaurantName || 'Restaurante'}
+                showUrlField
+              />
+              <div className="flex justify-end mt-4">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setFormKey((k) => k + 1)
+                    setOpen(false)
+                    setSuccess(null)
+                    setCreatedRestaurantId(null)
+                    setCreatedRestaurantName('')
+                  }}
+                >
+                  Concluir
+                </Button>
+              </div>
+            </div>
+          )}
+
           {error && (
             <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
               {error}
@@ -168,19 +206,21 @@ export default function NewRestaurantButton() {
             </p>
           )}
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => handleOpenChange(false)}
-              disabled={loading}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'A obter localização...' : 'Criar Restaurante'}
-            </Button>
-          </div>
+          {!createdRestaurantId && (
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => handleOpenChange(false)}
+                disabled={loading}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? 'A obter localização...' : 'Criar Restaurante'}
+              </Button>
+            </div>
+          )}
         </form>
       </Modal>
     </>

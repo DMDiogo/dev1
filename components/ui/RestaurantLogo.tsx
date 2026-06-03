@@ -15,36 +15,30 @@ export default function RestaurantLogo({ logoPath, name, className = '' }: Resta
 
   useEffect(() => {
     if (logoPath && logoPath.trim() !== '') {
-      let fullUrl = logoPath;
-      
-      // If it's already a full URL
+      const apiBaseUrl =
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+      let fullUrl = logoPath
+
       if (logoPath.startsWith('http://') || logoPath.startsWith('https://')) {
-        fullUrl = logoPath;
-      } 
-      // If it starts with /uploads
-      else if (logoPath.startsWith('/uploads')) {
-        console.log('backend api ', process.env.BACKEND_API_URL);
-        console.log('public backend api ', process.env.NEXT_PUBLIC_BACKEND_API_URL);
-        const apiBaseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:3000';
-        fullUrl = `${apiBaseUrl}${logoPath}`;
+        fullUrl = logoPath
+      } else if (logoPath.startsWith('/restaurant-logos')) {
+        fullUrl = logoPath
+      } else if (logoPath.startsWith('/uploads')) {
+        fullUrl = `${apiBaseUrl}${logoPath}`
+      } else if (!logoPath.includes('/')) {
+        fullUrl = `${apiBaseUrl}/uploads/${logoPath}`
+      } else {
+        const cleanPath = logoPath.startsWith('/') ? logoPath : `/${logoPath}`
+        fullUrl = `${apiBaseUrl}${cleanPath}`
       }
-      // If it's just a filename
-      else if (!logoPath.includes('/')) {
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-        fullUrl = `${apiBaseUrl}/uploads/${logoPath}`;
-      }
-      // For any other relative path
-      else {
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-        const cleanPath = logoPath.startsWith('/') ? logoPath : `/${logoPath}`;
-        fullUrl = `${apiBaseUrl}${cleanPath}`;
-      }
-      
-      setImgSrc(fullUrl);
+
+      setImgSrc(fullUrl)
+      setHasError(false)
     } else {
-      setHasError(true);
+      setImgSrc('')
+      setHasError(true)
     }
-  }, [logoPath]);
+  }, [logoPath])
 
   const handleError = () => {
     setHasError(true);

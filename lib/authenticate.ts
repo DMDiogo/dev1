@@ -13,7 +13,30 @@ type AuthUser = {
   restaurantId: string | null
   restaurantName: string | null
   restaurantStatus: string | null
+  restaurantLogo: string | null
   needsSetup: boolean
+}
+
+async function fetchRestaurantLogo(
+  restaurantId: string,
+  accessToken: string
+): Promise<string | null> {
+  if (!BACKEND_API_URL) return null
+
+  try {
+    const response = await fetch(
+      `${BACKEND_API_URL}/api/restaurants/${restaurantId}`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        cache: 'no-store',
+      }
+    )
+    if (!response.ok) return null
+    const data = await response.json()
+    return data.logo?.trim() || null
+  } catch {
+    return null
+  }
 }
 
 export async function authenticateWithBackend(
@@ -85,6 +108,11 @@ export async function authenticateWithBackend(
 
   const needsSetup = apiUser.role === 'RESTAURANT' && !restaurantId
 
+  let restaurantLogo: string | null = null
+  if (restaurantId && accessToken) {
+    restaurantLogo = await fetchRestaurantLogo(restaurantId, accessToken)
+  }
+
   return {
     ok: true,
     accessToken,
@@ -97,6 +125,7 @@ export async function authenticateWithBackend(
       restaurantId,
       restaurantName,
       restaurantStatus,
+      restaurantLogo,
       needsSetup,
     },
   }
@@ -110,7 +139,9 @@ export async function enrichRestaurantSession(user: {
   restaurantId?: string | null
   restaurantName?: string | null
   restaurantStatus?: string | null
+  restaurantLogo?: string | null
   needsSetup?: boolean
+  accessToken?: string
 }) {
   if (user.role !== 'RESTAURANT' || user.restaurantId) {
     return user
@@ -124,11 +155,17 @@ export async function enrichRestaurantSession(user: {
 
   if (!linked) return user
 
+  let restaurantLogo: string | null = null
+  if (user.accessToken) {
+    restaurantLogo = await fetchRestaurantLogo(linked.id, user.accessToken)
+  }
+
   return {
     ...user,
     restaurantId: linked.id,
     restaurantName: linked.name,
     restaurantStatus: linked.status ?? null,
+    restaurantLogo,
     needsSetup: false,
   }
 }

@@ -25,6 +25,10 @@
 *.pem
 .data/
 
+# logos enviados pelo painel (mantém a pasta)
+/public/restaurant-logos/*
+!/public/restaurant-logos/.gitkeep
+
 # debug
 npm-debug.log*
 yarn-debug.log*

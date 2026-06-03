@@ -46,6 +46,7 @@ export const authOptions: NextAuthOptions = {
           restaurantId: result.user.restaurantId,
           restaurantName: result.user.restaurantName,
           restaurantStatus: result.user.restaurantStatus,
+          restaurantLogo: result.user.restaurantLogo,
           needsSetup: result.user.needsSetup,
           accessToken: result.accessToken,
         }
@@ -60,6 +61,7 @@ export const authOptions: NextAuthOptions = {
         token.restaurantId = user.restaurantId
         token.restaurantName = user.restaurantName
         token.restaurantStatus = user.restaurantStatus
+        token.restaurantLogo = user.restaurantLogo
         token.needsSetup = user.needsSetup
         token.accessToken = user.accessToken
       }
@@ -74,6 +76,9 @@ export const authOptions: NextAuthOptions = {
         if ('restaurantStatus' in session) {
           token.restaurantStatus = session.restaurantStatus as string | null
         }
+        if ('restaurantLogo' in session) {
+          token.restaurantLogo = session.restaurantLogo as string | null
+        }
         if ('needsSetup' in session) {
           token.needsSetup = session.needsSetup as boolean
         }
@@ -87,13 +92,16 @@ export const authOptions: NextAuthOptions = {
           restaurantId: token.restaurantId as string | null,
           restaurantName: token.restaurantName as string | null,
           restaurantStatus: token.restaurantStatus as string | null,
+          restaurantLogo: token.restaurantLogo as string | null,
           needsSetup: token.needsSetup as boolean,
+          accessToken: token.accessToken as string,
         })
 
         if (enriched.restaurantId) {
           token.restaurantId = enriched.restaurantId
           token.restaurantName = enriched.restaurantName ?? null
           token.restaurantStatus = enriched.restaurantStatus ?? null
+          token.restaurantLogo = enriched.restaurantLogo ?? null
           token.needsSetup = false
         }
       }
@@ -107,6 +115,7 @@ export const authOptions: NextAuthOptions = {
         session.user.restaurantId = token.restaurantId as string
         session.user.restaurantName = token.restaurantName as string
         session.user.restaurantStatus = token.restaurantStatus as string
+        session.user.restaurantLogo = (token.restaurantLogo as string | null) ?? null
         session.user.needsSetup = token.needsSetup as boolean
         session.user.accessToken = token.accessToken as string
       }

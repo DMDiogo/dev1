@@ -2,15 +2,18 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import Card from '@/components/ui/Card'
 import Input from '@/components/ui/Input'
 import Label from '@/components/ui/Label'
 import Button from '@/components/ui/Button'
 import RestaurantStatusBadge from '@/components/restaurants/RestaurantStatusBadge'
+import RestaurantLogoUpload from '@/components/restaurants/RestaurantLogoUpload'
 
 type RestaurantData = {
   id: string
   name: string
+  logo?: string | null
   address: string
   telephone: string | null
   email: string | null
@@ -21,10 +24,15 @@ type RestaurantData = {
 
 export default function EditRestaurantForm({
   restaurant,
+  variant = 'admin',
 }: {
   restaurant: RestaurantData
+  /** admin: pode alterar estado; restaurant: só dados do estabelecimento */
+  variant?: 'admin' | 'restaurant'
 }) {
   const router = useRouter()
+  const { update } = useSession()
+  const isRestaurant = variant === 'restaurant'
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -36,14 +44,17 @@ export default function EditRestaurantForm({
     setLoading(true)
 
     const form = new FormData(e.currentTarget)
-    const payload = {
+    const payload: Record<string, unknown> = {
       name: String(form.get('name')).trim(),
       address: String(form.get('address')).trim(),
       telephone: String(form.get('telephone') || '').trim() || null,
       email: String(form.get('email') || '').trim() || null,
       website: String(form.get('website') || '').trim() || null,
       taxId: String(form.get('taxId') || '').trim() || null,
-      status: String(form.get('status') || '').trim() || undefined,
+    }
+
+    if (!isRestaurant) {
+      payload.status = String(form.get('status') || '').trim() || undefined
     }
 
     try {
@@ -62,6 +73,14 @@ export default function EditRestaurantForm({
       setSuccess(
         data.geocodeMessage ?? 'Alterações guardadas com sucesso.'
       )
+
+      if (isRestaurant) {
+        await update({
+          restaurantName: String(payload.name),
+          restaurantLogo: data.logo ?? restaurant.logo ?? null,
+        })
+      }
+
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao guardar')
@@ -71,7 +90,17 @@ export default function EditRestaurantForm({
   }
 
   return (
-    <Card title="Editar restaurante">
+    <div className="space-y-6">
+      <Card title="Logo do restaurante">
+        <RestaurantLogoUpload
+          restaurantId={restaurant.id}
+          restaurantName={restaurant.name}
+          currentLogo={restaurant.logo}
+          updateSession={isRestaurant}
+        />
+      </Card>
+
+      <Card title={isRestaurant ? 'Dados do estabelecimento' : 'Editar restaurante'}>
       <form onSubmit={handleSubmit} className="space-y-4">
         {restaurant.status && (
           <div className="flex items-center justify-between gap-3 pb-2">
@@ -132,22 +161,24 @@ export default function EditRestaurantForm({
               defaultValue={restaurant.taxId ?? ''}
             />
           </div>
-          <div>
-            <Label htmlFor="edit-status">Estado</Label>
-            <select
-              id="edit-status"
-              name="status"
-              defaultValue={restaurant.status ?? 'STAND_BY'}
-              className="w-full rounded-xl bg-surface-muted border border-surface-border px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500/40"
-            >
-              <option value="STAND_BY">Em análise</option>
-              <option value="ACTIVE">Activo</option>
-              <option value="INACTIVE">Inactivo</option>
-            </select>
-            <p className="text-xs text-gray-500 mt-1">
-              Active o restaurante após validar os dados do estabelecimento.
-            </p>
-          </div>
+          {!isRestaurant && (
+            <div>
+              <Label htmlFor="edit-status">Estado</Label>
+              <select
+                id="edit-status"
+                name="status"
+                defaultValue={restaurant.status ?? 'STAND_BY'}
+                className="w-full rounded-xl bg-surface-muted border border-surface-border px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+              >
+                <option value="STAND_BY">Em análise</option>
+                <option value="ACTIVE">Activo</option>
+                <option value="INACTIVE">Inactivo</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Active o restaurante após validar os dados do estabelecimento.
+              </p>
+            </div>
+          )}
         </div>
 
         {error && <p className="text-sm text-red-400">{error}</p>}
@@ -162,5 +193,6 @@ export default function EditRestaurantForm({
         </Button>
       </form>
     </Card>
+    </div>
   )
 }

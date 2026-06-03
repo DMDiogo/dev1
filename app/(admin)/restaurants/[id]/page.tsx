@@ -107,6 +107,7 @@ export default async function RestaurantDetailPage({
         restaurant={{
           id: restaurant.id,
           name: restaurant.name,
+          logo: restaurant.logo,
           address: restaurant.address,
           telephone: restaurant.telephone,
           email: restaurant.email,
