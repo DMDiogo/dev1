@@ -21,7 +21,7 @@ type Product = {
   description?: string | null
   category?: string | null
   price: number
-  taxPercentage?: string | number | null
+  taxPercentage?: string | null | undefined
   status?: string | null
   restaurant?: { name?: string } | null
 }

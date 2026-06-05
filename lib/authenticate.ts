@@ -87,12 +87,11 @@ export async function authenticateWithBackend(
 
   const profile = await findUserForLogin(normalizedEmail)
   const owned =
-    profile?.ownedRestaurants?.[0] ?? profile?.restaurants?.[0] ?? null
+  profile?.ownedRestaurants?.[0] ?? profile?.restaurants?.[0] ?? null
 
-  let restaurantId = profile?.restaurantId ?? owned?.id ?? null
-  let restaurantName = profile?.restaurantName ?? owned?.name ?? null
-  let restaurantStatus =
-    profile?.restaurantStatus ?? owned?.status ?? null
+let restaurantId = owned?.id ?? profile?.restaurantId ?? null
+let restaurantName = owned?.name ?? profile?.restaurantName ?? null
+let restaurantStatus = owned?.status ?? profile?.restaurantStatus ?? null
 
   const telephone = apiUser.telephone ?? profile?.telephone ?? null
 

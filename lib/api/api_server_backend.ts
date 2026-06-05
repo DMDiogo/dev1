@@ -466,6 +466,13 @@ export async function updateUserStatus(id: string, status: string) {
   })
 }
 
+export async function updateUser(id: string, data: { name?: string; email?: string; telephone?: string; address?: string }) {
+  return adminFetcher<any>(`/api/users/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+}
+
 async function getDriversFromOrders(): Promise<DriverUser[]> {
   const ordersRaw = await adminFetcher<any>(`/api/orders`)
   return buildDriversFromAllOrders(

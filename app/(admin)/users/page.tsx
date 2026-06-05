@@ -12,6 +12,14 @@ export default async function UsersPage({
     await adminFetcher<any[]>(`/api/users?role=CLIENT`)
   )
 
+  async function updateUser(id: string, data: any) {
+    'use server'
+    await adminFetcher(`/api/users/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -20,7 +28,7 @@ export default async function UsersPage({
           {users.length} cliente{users.length !== 1 ? 's' : ''} registados
         </p>
       </div>
-      <UsersSearch users={users} initialQuery={q?.trim() ?? ''} />
+      <UsersSearch users={users} initialQuery={q?.trim() ?? ''} onUpdateUser={updateUser} />
     </div>
   )
 }

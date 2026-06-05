@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Search } from 'lucide-react'
+import { Search, Pencil } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -11,12 +11,14 @@ import {
   TableRow,
 } from '@/components/ui/Table'
 import { formatDate } from '@/lib/utils'
+import EditUserModal from './EditUserModal'
 
 type Client = {
   id: string
   name: string
   email: string
   telephone?: string | null
+  address?: string | null
   createdAt: string
   _count?: { orders?: number }
 }
@@ -24,22 +26,33 @@ type Client = {
 export default function UsersSearch({
   users,
   initialQuery = '',
+  onUpdateUser,
 }: {
   users: Client[]
   initialQuery?: string
+  onUpdateUser: (id: string, data: Partial<Client>) => Promise<void>
 }) {
   const [query, setQuery] = useState(initialQuery)
+  const [editingUser, setEditingUser] = useState<Client | null>(null)
+  const [localUsers, setLocalUsers] = useState(users)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return users
-    return users.filter(
+    if (!q) return localUsers
+    return localUsers.filter(
       (user) =>
         user.name?.toLowerCase().includes(q) ||
         user.email?.toLowerCase().includes(q) ||
         user.telephone?.toLowerCase().includes(q)
     )
-  }, [users, query])
+  }, [localUsers, query])
+
+  async function handleSave(id: string, data: Partial<Client>) {
+    await onUpdateUser(id, data)
+    setLocalUsers((prev) =>
+      prev.map((u) => (u.id === id ? { ...u, ...data } : u))
+    )
+  }
 
   return (
     <div className="space-y-4">
@@ -65,19 +78,29 @@ export default function UsersSearch({
             <TableHeader>Telefone</TableHeader>
             <TableHeader>Pedidos</TableHeader>
             <TableHeader>Registo</TableHeader>
+            <TableHeader></TableHeader>
           </TableRow>
         </TableHead>
         <TableBody>
           {filtered.map((user) => (
-            <TableRow key={user.id}>
-              <TableCell className="font-medium text-white">
-                {user.name}
-              </TableCell>
+            <TableRow
+              key={user.id}
+              className="hover:bg-surface-muted/50 transition-colors"
+            >
+              <TableCell className="font-medium text-white">{user.name}</TableCell>
               <TableCell>{user.email}</TableCell>
               <TableCell>{user.telephone}</TableCell>
               <TableCell>{user._count?.orders ?? 0}</TableCell>
               <TableCell className="text-gray-500 text-xs">
                 {formatDate(user.createdAt)}
+              </TableCell>
+              <TableCell>
+                <button
+                  onClick={() => setEditingUser(user)}
+                  className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-surface-muted transition-colors"
+                >
+                  <Pencil size={14} />
+                </button>
               </TableCell>
             </TableRow>
           ))}
@@ -85,9 +108,15 @@ export default function UsersSearch({
       </Table>
 
       {filtered.length === 0 && (
-        <p className="text-center text-gray-500 py-8">
-          Nenhum cliente encontrado.
-        </p>
+        <p className="text-center text-gray-500 py-8">Nenhum cliente encontrado.</p>
+      )}
+
+      {editingUser && (
+        <EditUserModal
+          user={editingUser}
+          onClose={() => setEditingUser(null)}
+          onSave={handleSave}
+        />
       )}
     </div>
   )
