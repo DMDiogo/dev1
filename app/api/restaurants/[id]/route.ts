@@ -91,7 +91,7 @@ export async function PATCH(
       response.geocodeMessage =
         latitude != null && longitude != null
           ? `Coordenadas obtidas: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
-          : 'Morada actualizada. Não foi possível obter GPS automaticamente.'
+          : 'Informação atualizada.'
     }
 
     return NextResponse.json(response)

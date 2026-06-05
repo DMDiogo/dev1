@@ -61,7 +61,9 @@ export default function LoginForm() {
       if (result?.error) {
         console.error('SignIn error:', result.error)
         setError(
-          'Email ou palavra-passe incorretos. Use o email da conta de utilizador, não o do restaurante.'
+          result.error === 'CredentialsSignin'
+            ? 'Email ou palavra-passe incorrectos. Use o email da conta de utilizador (não o do restaurante).'
+            : result.error
         )
         setLoading(false)
         return

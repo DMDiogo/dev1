@@ -1,70 +1,43 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import Image from 'next/image';
+import { useMemo, useState } from 'react'
+import { resolveMediaUrl } from '@/lib/media-url'
 
 interface RestaurantLogoProps {
-  logoPath: string | null | undefined;
-  name: string;
-  className?: string;
+  logoPath: string | null | undefined
+  name: string
+  className?: string
 }
 
-export default function RestaurantLogo({ logoPath, name, className = '' }: RestaurantLogoProps) {
-  const [imgSrc, setImgSrc] = useState<string>('');
-  const [hasError, setHasError] = useState(false);
+export default function RestaurantLogo({
+  logoPath,
+  name,
+  className = '',
+}: RestaurantLogoProps) {
+  const [hasError, setHasError] = useState(false)
+  const imgSrc = useMemo(() => resolveMediaUrl(logoPath), [logoPath])
 
-  useEffect(() => {
-    if (logoPath && logoPath.trim() !== '') {
-      const apiBaseUrl =
-        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
-      let fullUrl = logoPath
-
-      if (logoPath.startsWith('http://') || logoPath.startsWith('https://')) {
-        fullUrl = logoPath
-      } else if (logoPath.startsWith('/restaurant-logos')) {
-        fullUrl = logoPath
-      } else if (logoPath.startsWith('/uploads')) {
-        fullUrl = `${apiBaseUrl}${logoPath}`
-      } else if (!logoPath.includes('/')) {
-        fullUrl = `${apiBaseUrl}/uploads/${logoPath}`
-      } else {
-        const cleanPath = logoPath.startsWith('/') ? logoPath : `/${logoPath}`
-        fullUrl = `${apiBaseUrl}${cleanPath}`
-      }
-
-      setImgSrc(fullUrl)
-      setHasError(false)
-    } else {
-      setImgSrc('')
-      setHasError(true)
-    }
-  }, [logoPath])
-
-  const handleError = () => {
-    setHasError(true);
-  };
-
-  // Show placeholder with first letter if image fails to load or no logo
-  if (hasError || !imgSrc) {
+  if (!imgSrc || hasError) {
     return (
-      <div className={`${className} bg-gradient-to-br from-brand-500/20 to-brand-600/10 flex items-center justify-center rounded-xl border border-brand-500/20`}>
+      <div
+        className={`${className} bg-gradient-to-br from-brand-500/20 to-brand-600/10 flex items-center justify-center rounded-xl border border-brand-500/20`}
+      >
         <span className="text-2xl font-bold text-brand-500">
           {name?.charAt(0).toUpperCase() || 'R'}
         </span>
       </div>
-    );
+    )
   }
 
   return (
-    <div className={`relative ${className}`}>
-      <Image
+    <div className={`relative overflow-hidden rounded-xl ${className}`}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
         src={imgSrc}
         alt={name}
-        fill
-        className="rounded-xl object-cover"
-        unoptimized
-        onError={handleError}
+        className="w-full h-full object-cover rounded-xl"
+        onError={() => setHasError(true)}
       />
     </div>
-  );
+  )
 }

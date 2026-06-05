@@ -189,7 +189,7 @@ export default function EditRestaurantForm({
         )}
 
         <Button type="submit" disabled={loading}>
-          {loading ? 'A atualizar localização...' : 'Guardar alterações'}
+          {loading ? 'A atualizar informação...' : 'Guardar alterações'}
         </Button>
       </form>
     </Card>

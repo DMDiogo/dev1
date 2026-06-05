@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { ImagePlus, Loader2, Trash2 } from 'lucide-react'
@@ -31,6 +31,11 @@ export default function RestaurantLogoUpload({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+
+  useEffect(() => {
+    setLogoUrl(currentLogo ?? '')
+    setPreview(null)
+  }, [currentLogo])
 
   const displayLogo = preview ?? logoUrl ?? currentLogo
 

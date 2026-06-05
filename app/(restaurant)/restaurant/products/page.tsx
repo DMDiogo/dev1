@@ -20,6 +20,7 @@ export default async function RestaurantProductsPage() {
       products={products}
       restaurants={restaurants}
       showRestaurantColumn={false}
+      editable
     />
   )
 }

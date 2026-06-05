@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/Table'
 import { formatDate } from '@/lib/utils'
 import { getStaffUsers } from '@/lib/api/api_server_backend'
-import RestaurantStatusBadge from '@/components/restaurants/RestaurantStatusBadge'
+import StaffStatusForm from '@/components/staff/StaffStatusForm'
 
 function roleLabel(role: string) {
   if (role === 'ADMIN') return 'Administrador'
@@ -33,7 +33,8 @@ export default async function StaffUsersPage() {
           Utilizadores
         </h1>
         <p className="text-gray-400 mt-1">
-          {users.length} conta{users.length !== 1 ? 's' : ''} (Admin e Restaurante)
+          {users.length} conta{users.length !== 1 ? 's' : ''} (Admin e
+          Restaurante) — altere o estado directamente na tabela
         </p>
       </div>
 
@@ -62,7 +63,10 @@ export default async function StaffUsersPage() {
                 </Badge>
               </TableCell>
               <TableCell>
-                <RestaurantStatusBadge status={user.status ?? 'ACTIVE'} />
+                <StaffStatusForm
+                  userId={user.id}
+                  currentStatus={user.status ?? 'ACTIVE'}
+                />
               </TableCell>
               <TableCell className="text-gray-500 text-xs">
                 {formatDate(user.createdAt)}

@@ -10,15 +10,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/Table'
+import Badge from '@/components/ui/Badge'
 import { formatCurrency } from '@/lib/utils'
 import NewProductButton from '@/components/products/NewProductButton'
+import EditProductModal from '@/components/products/EditProductModal'
 
 type Product = {
   id: string
   name: string
+  description?: string | null
   category?: string | null
   price: number
   taxPercentage?: string | number | null
+  status?: string | null
   restaurant?: { name?: string } | null
 }
 
@@ -32,14 +36,27 @@ function formatTaxPercentage(taxPercentage: string | number | null | undefined) 
   return `${taxPercentage}%`
 }
 
+function statusBadge(status: string | null | undefined) {
+  if (status === 'INACTIVE') {
+    return <Badge variant="danger">Inactivo</Badge>
+  }
+  if (status === 'STAND_BY') {
+    return <Badge variant="warning">Em análise</Badge>
+  }
+  return <Badge variant="success">Activo</Badge>
+}
+
 export default function ProductsPanel({
   products,
   restaurants,
   showRestaurantColumn = true,
+  editable = false,
 }: {
   products: Product[]
   restaurants: RestaurantOption[]
   showRestaurantColumn?: boolean
+  /** Painel restaurante: editar preço, IVA, descrição e estado */
+  editable?: boolean
 }) {
   const [query, setQuery] = useState('')
 
@@ -51,12 +68,14 @@ export default function ProductsPanel({
       const name = product.name?.toLowerCase() ?? ''
       const restaurant = product.restaurant?.name?.toLowerCase() ?? ''
       const category = product.category?.toLowerCase() ?? ''
+      const description = product.description?.toLowerCase() ?? ''
       const price = String(product.price ?? '')
 
       return (
         name.includes(q) ||
         restaurant.includes(q) ||
         category.includes(q) ||
+        description.includes(q) ||
         price.includes(q)
       )
     })
@@ -97,13 +116,20 @@ export default function ProductsPanel({
             {showRestaurantColumn && <TableHeader>Restaurante</TableHeader>}
             <TableHeader>Preço</TableHeader>
             <TableHeader>IVA</TableHeader>
+            <TableHeader>Estado</TableHeader>
+            {editable && <TableHeader className="text-right">Acções</TableHeader>}
           </TableRow>
         </TableHead>
         <TableBody>
           {filtered.map((product) => (
             <TableRow key={product.id}>
-              <TableCell className="font-medium text-white">
-                {product.name}
+              <TableCell>
+                <p className="font-medium text-white">{product.name}</p>
+                {product.description && (
+                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                    {product.description}
+                  </p>
+                )}
               </TableCell>
               <TableCell className="text-gray-400 text-xs uppercase">
                 {product.category ?? '—'}
@@ -117,6 +143,12 @@ export default function ProductsPanel({
               <TableCell className="text-gray-500 text-xs">
                 {formatTaxPercentage(product.taxPercentage)}
               </TableCell>
+              <TableCell>{statusBadge(product.status)}</TableCell>
+              {editable && (
+                <TableCell className="text-right">
+                  <EditProductModal product={product} />
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>

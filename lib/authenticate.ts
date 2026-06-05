@@ -58,13 +58,17 @@ export async function authenticateWithBackend(
         password,
       }),
     })
-  } catch {
+  } catch (error) {
+    console.error('[Auth] Network error contacting API:', error)
     return { ok: false, reason: 'network' }
   }
 
   const loginData = await loginResponse.json().catch(() => ({}))
 
   if (!loginResponse.ok) {
+    const apiMessage =
+      typeof loginData.error === 'string' ? loginData.error : null
+    console.log('[Auth] API login failed:', loginResponse.status, apiMessage)
     return { ok: false, reason: 'invalid_credentials' }
   }
 

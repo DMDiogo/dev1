@@ -35,7 +35,19 @@ export const authOptions: NextAuthOptions = {
 
         if (!result.ok) {
           console.log('[NextAuth] Login failed:', result.reason)
-          return null
+          if (result.reason === 'network') {
+            throw new Error(
+              'Não foi possível contactar a API. Verifique internet, VPN ou se o servidor está online.'
+            )
+          }
+          if (result.reason === 'role') {
+            throw new Error(
+              'Esta conta não tem acesso ao painel. Apenas perfis Admin e Restaurante podem entrar.'
+            )
+          }
+          throw new Error(
+            'Email ou palavra-passe incorrectos. Use o email da conta de utilizador (não o email do restaurante).'
+          )
         }
 
         return {
