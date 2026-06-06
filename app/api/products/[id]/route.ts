@@ -20,6 +20,8 @@ async function putProductToBackend(
     }
   }
 
+  console.log('[PUT PRODUCT] Sending fields:', Object.fromEntries(formData.entries()))
+
   const response = await fetch(`${getApiBaseUrl()}/api/products/${id}`, {
     method: 'PUT',
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -28,6 +30,9 @@ async function putProductToBackend(
   })
 
   const data = await response.json().catch(() => ({}))
+  console.log('[PUT PRODUCT] Response status:', response.status)
+  console.log('[PUT PRODUCT] Response data:', data)
+
   if (!response.ok) {
     const detail =
       typeof data.details === 'string' ? data.details : undefined
@@ -37,9 +42,6 @@ async function putProductToBackend(
   }
   return data
 }
-
-/** Campos que a API remota aceita hoje (status/taxPercentage falham no servidor actual). */
-const RISKY_API_FIELDS = new Set(['status', 'taxPercentage'])
 
 export async function PUT(
   request: Request,
@@ -71,7 +73,7 @@ export async function PUT(
       if (!VALID_TAX.has(tax)) {
         return NextResponse.json({ error: 'IVA inválido' }, { status: 400 })
       }
-      fields.taxPercentage = tax
+      fields.taxPercentage = tax.replace('VAT_', '')
     }
     if (body.status !== undefined) {
       const status = String(body.status)
@@ -99,28 +101,7 @@ export async function PUT(
       id,
       session.user.accessToken,
       fields
-    ).catch(async (firstError) => {
-      const hasRisky = Object.keys(fields).some((k) => RISKY_API_FIELDS.has(k))
-      if (!hasRisky) throw firstError
-
-      const safeFields = Object.fromEntries(
-        Object.entries(fields).filter(([k]) => !RISKY_API_FIELDS.has(k))
-      )
-
-      if (Object.keys(safeFields).length === 0) throw firstError
-
-      const updated = await putProductToBackend(
-        id,
-        session.user.accessToken,
-        safeFields
-      )
-
-      const skipped = Object.keys(fields).filter((k) => RISKY_API_FIELDS.has(k))
-      return {
-        ...updated,
-        _warning: `Preço/descrição guardados. A API remota ainda não aceita: ${skipped.join(', ')}. Actualize o servidor (migration status + fix IVA).`,
-      }
-    })
+    )
 
     return NextResponse.json(product)
   } catch (error) {

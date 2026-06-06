@@ -1,11 +1,11 @@
 import { requireRestaurant } from '@/lib/session'
-import { getRestaurantDashboardStats } from '@/lib/api/api_server_backend'
+import { getRestaurantDashboardStats, getRestaurantById } from '@/lib/api/api_server_backend'
 import StatsCard from '@/components/dashboard/StatsCard'
 import RecentOrders from '@/components/dashboard/RecentOrders'
+import RestaurantInactiveBanner from '@/components/restaurant/RestaurantInactiveBanner'
 import RestaurantStandbyBanner from '@/components/restaurant/RestaurantStandbyBanner'
 import { ShoppingBag, Users, Package, TrendingUp } from 'lucide-react'
 
-// Define the expected shape for RecentOrders component
 interface RecentOrder {
   id: string
   orderCounter: number
@@ -21,11 +21,14 @@ interface RecentOrder {
 export default async function RestaurantDashboardPage() {
   const session = await requireRestaurant()
   const restaurantId = session.user.restaurantId!
-  const isStandby = session.user.restaurantStatus === 'STAND_BY'
 
-  const stats = await getRestaurantDashboardStats(restaurantId)
+  const [stats, restaurant] = await Promise.all([
+    getRestaurantDashboardStats(restaurantId),
+    getRestaurantById(restaurantId),
+  ])
 
-  // Transform recentOrders to match the expected format
+  const isStandby = restaurant?.status === 'STAND_BY'
+
   const transformedRecentOrders: RecentOrder[] = (stats.recentOrders ?? []).map((order: any) => ({
     id: order.id || order._id || `order-${Date.now()}-${Math.random()}`,
     orderCounter: order.orderCounter || order.orderNumber || 0,
@@ -79,6 +82,7 @@ export default async function RestaurantDashboardPage() {
       </div>
 
       {isStandby && <RestaurantStandbyBanner />}
+      {restaurant?.status === 'INACTIVE' && <RestaurantInactiveBanner />}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         {formattedStats.map((stat) => (
