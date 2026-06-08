@@ -15,10 +15,10 @@ type RestaurantData = {
   name: string
   logo?: string | null
   address: string
-  telephone: string | null
-  email: string | null
-  website: string | null
-  taxId: string | null
+  telephone?: string | null
+  email?: string | null
+  website?: string | null
+  taxId?: string | null
   status?: string | null
 }
 
